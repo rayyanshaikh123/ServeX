@@ -4,6 +4,7 @@ import { useAuthStore } from './store/useAuthStore';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Sidebar } from './components/layout/Sidebar';
 import { Login } from './pages/Login';
+import { Register } from './pages/Register';
 import { OwnerDashboard } from './pages/owner/OwnerDashboard';
 import { StaffManagementPage } from './pages/owner/StaffManagementPage';
 import { RevenueStreamPage } from './pages/owner/RevenueStreamPage';
@@ -16,11 +17,9 @@ import { AnalyticsPage } from './pages/common/AnalyticsPage';
 import { RevenuePage } from './pages/common/RevenuePage';
 import { SettingsPage } from './pages/common/SettingsPage';
 import { ChatPage } from './pages/common/ChatPage';
+import { LandingPage } from './pages/common/LandingPage';
 import { PaymentsPage } from './pages/staff/PaymentsPage';
 import { NewOrderPage } from './pages/staff/NewOrderPage';
-import { WaiterDashboard } from './pages/staff/WaiterDashboard';
-import { CashierDashboard } from './pages/staff/CashierDashboard';
-import { StaffDashboard } from './pages/staff/StaffDashboard';
 import { CreateRestaurantPage } from './pages/owner/CreateRestaurantPage';
 import { RestaurantIntelligencePage } from './pages/owner/RestaurantIntelligencePage';
 import { Toaster } from './components/ui/sonner';
@@ -33,9 +32,6 @@ const DashboardRedirect = () => {
   switch (role) {
     case 'OWNER': return <Navigate to="/owner" replace />;
     case 'ADMIN': return <Navigate to="/admin" replace />;
-    case 'STAFF': return <Navigate to="/staff" replace />;
-    case 'WAITER': return <Navigate to="/staff/waiter" replace />;
-    case 'CASHIER': return <Navigate to="/staff/cashier" replace />;
     default: return <Navigate to="/login" replace />;
   }
 };
@@ -55,9 +51,11 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         
-        <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN', 'STAFF']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN']} />}>
           <Route path="/analytics" element={<Layout><AnalyticsPage /></Layout>} />
           <Route path="/revenue" element={<Layout><RevenuePage /></Layout>} />
           <Route path="/settings" element={<Layout><SettingsPage /></Layout>} />
@@ -82,19 +80,12 @@ export default function App() {
           <Route path="/admin/tables" element={<Layout><TablesPage /></Layout>} />
           <Route path="/admin/bookings" element={<Layout><BookingsPage /></Layout>} />
           <Route path="/admin/invoices" element={<Layout><InvoicesPage /></Layout>} />
+          <Route path="/admin/orders/new" element={<Layout><NewOrderPage /></Layout>} />
+          <Route path="/admin/payments" element={<Layout><PaymentsPage /></Layout>} />
           <Route path="/admin/*" element={<Layout><AdminDashboard /></Layout>} />
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['STAFF', 'WAITER', 'CASHIER']} />}>
-          <Route path="/staff" element={<Layout><StaffDashboard /></Layout>} />
-          <Route path="/staff/waiter" element={<Layout><WaiterDashboard /></Layout>} />
-          <Route path="/staff/cashier" element={<Layout><CashierDashboard /></Layout>} />
-          <Route path="/staff/orders/new" element={<Layout><NewOrderPage /></Layout>} />
-          <Route path="/staff/payments" element={<Layout><PaymentsPage /></Layout>} />
-          <Route path="/staff/*" element={<Layout><StaffDashboard /></Layout>} />
-        </Route>
-
-        <Route path="/" element={<DashboardRedirect />} />
+        <Route path="/app" element={<DashboardRedirect />} />
         <Route path="/unauthorized" element={<div className="h-screen flex items-center justify-center font-bold text-2xl">Unauthorized Access</div>} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

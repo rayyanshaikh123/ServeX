@@ -81,7 +81,7 @@ async def get_order_endpoint(
 @router.post("", response_model=OrderResponse)
 async def create_order_endpoint(
     payload: OrderCreateRequest,
-    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin, Role.staff)),
+    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin)),
 ) -> OrderResponse:
     try:
         doc = await create_order(
@@ -109,7 +109,7 @@ async def create_order_endpoint(
 async def update_order_status_endpoint(
     order_id: str,
     payload: OrderStatusUpdateRequest,
-    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin, Role.staff)),
+    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin)),
 ) -> OrderResponse:
     try:
         doc = await update_order_status(

@@ -9,8 +9,6 @@ from app.schemas.user import CurrentUser
 
 def require_roles(*roles: Role):
     allowed = {role.value if isinstance(role, Role) else str(role) for role in roles}
-    if Role.staff.value in allowed:
-        allowed.update({Role.waiter.value, Role.cashier.value})
 
     async def checker(user: CurrentUser = Depends(get_current_user)) -> CurrentUser:
         if user.role not in allowed:

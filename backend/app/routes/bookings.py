@@ -48,7 +48,7 @@ async def list_all_bookings(
 @router.post("", response_model=BookingResponse)
 async def create_booking_endpoint(
     payload: BookingCreateRequest,
-    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin, Role.staff)),
+    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin)),
 ) -> BookingResponse:
     try:
         doc = await create_booking(
@@ -75,7 +75,7 @@ async def create_booking_endpoint(
 @router.post("/{booking_id}/cancel", response_model=BookingResponse)
 async def cancel_booking_endpoint(
     booking_id: str,
-    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin, Role.staff)),
+    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin)),
 ) -> BookingResponse:
     doc = await cancel_booking(current_user.restaurant_id, booking_id)
     if not doc:

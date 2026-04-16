@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/payments", tags=["payments"])
 @router.post("/order")
 async def create_order(
     payload: PaymentCreateRequest,
-    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin, Role.staff)),
+    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin)),
 ) -> dict:
     try:
         return await create_payment_order(current_user.restaurant_id, payload.order_id)
@@ -24,7 +24,7 @@ async def create_order(
 @router.post("/verify", response_model=PaymentResponse)
 async def verify_payment_endpoint(
     payload: PaymentVerifyRequest,
-    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin, Role.staff)),
+    current_user: CurrentUser = Depends(require_roles(Role.owner, Role.admin)),
 ) -> PaymentResponse:
     try:
         record = await verify_payment(current_user.restaurant_id, payload.model_dump())

@@ -1,20 +1,48 @@
-import { Card, CardContent } from "../../components/ui/card";
+import { useMemo } from "react";
+import { Card } from "../../components/ui/card";
 import { FileText, Download, Search, Filter, Printer, MoreVertical, CreditCard, DollarSign } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { cn } from "../../lib/utils";
-
-const invoices = [
-  { id: 'INV-1024', date: '2024-05-20', guest: 'Room 402', total: '$342.50', status: 'Paid', method: 'Card' },
-  { id: 'INV-1023', date: '2024-05-20', guest: 'Walk-in', total: '$89.20', status: 'Unpaid', method: 'Cash' },
-  { id: 'INV-1022', date: '2024-05-19', guest: 'Table 6 (Large Group)', total: '$850.00', status: 'Paid', method: 'Corporate' },
-  { id: 'INV-1021', date: '2024-05-19', guest: 'Alexander Pierce', total: '$210.00', status: 'Refunded', method: 'Card' },
-  { id: 'INV-1020', date: '2024-05-18', guest: 'Elena Gilbert', total: '$145.00', status: 'Paid', method: 'Card' },
-];
+import { useOrders } from "../../hooks";
+import { generateInvoice } from "../../lib/endpoints/orders";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 export const InvoicesPage = () => {
+  const { data, isLoading, isError } = useOrders();
+
+  const orders = useMemo(() => data?.items ?? [], [data]);
+  const todayTotal = useMemo(() => {
+    const today = new Date().toDateString();
+    return orders
+      .filter((order) => new Date(order.created_at || '').toDateString() === today)
+      .reduce((acc, order) => acc + order.total, 0);
+  }, [orders]);
+
+  const averageCheck = useMemo(() => {
+    if (!orders.length) return 0;
+    const total = orders.reduce((acc, order) => acc + order.total, 0);
+    return total / orders.length;
+  }, [orders]);
+
+  const outstanding = useMemo(() => orders.filter((order) => order.status !== 'paid'), [orders]);
+
+  const invoiceMutation = useMutation({
+    mutationFn: generateInvoice,
+    onSuccess: (invoice) => {
+      if (invoice.file_url) {
+        window.open(invoice.file_url, '_blank');
+        toast.success('Invoice generated.');
+        return;
+      }
+      toast.success('Invoice generated.');
+    },
+    onError: () => toast.error('Failed to generate invoice.'),
+  });
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
@@ -24,9 +52,9 @@ export const InvoicesPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {[
-          { label: 'Revenue (Today)', value: '$4,230.50', icon: DollarSign, change: '+15%' },
-          { label: 'Average Check', value: '$82.40', icon: CreditCard, change: '+2.4%' },
-          { label: 'Outstanding Bills', value: '$1,120.00', icon: FileText, change: '4 Items' },
+          { label: 'Revenue (Today)', value: todayTotal.toFixed(2), icon: DollarSign, change: isLoading ? 'Loading' : 'Today' },
+          { label: 'Average Check', value: averageCheck.toFixed(2), icon: CreditCard, change: isLoading ? 'Loading' : 'All orders' },
+          { label: 'Outstanding Bills', value: `${outstanding.length}`, icon: FileText, change: 'Open' },
         ].map((stat, i) => (
           <Card key={i} className="bg-card border-border shadow-none rounded-lg p-6">
             <div className="flex items-center justify-between mb-4">
@@ -63,6 +91,9 @@ export const InvoicesPage = () => {
       </div>
 
       <Card className="bg-card border-border shadow-none rounded-lg overflow-hidden">
+        {isError && (
+          <div className="p-4 text-[12px] text-destructive">Orders are currently unavailable.</div>
+        )}
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-border hover:bg-transparent">
@@ -76,34 +107,44 @@ export const InvoicesPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {invoices.map((inv) => (
-              <TableRow key={inv.id} className="border-border hover:bg-muted/20">
-                <TableCell className="font-mono text-[11px] text-muted-foreground py-4 pl-6">{inv.id}</TableCell>
-                <TableCell className="text-[12px]">{inv.date}</TableCell>
-                <TableCell className="text-[13px] font-medium">{inv.guest}</TableCell>
-                <TableCell className="text-[13px] font-bold text-foreground">{inv.total}</TableCell>
-                <TableCell className="text-[11px] font-mono text-muted-foreground uppercase">{inv.method}</TableCell>
-                <TableCell>
-                  <Badge variant="outline" className={cn(
-                    "text-[9px] uppercase tracking-tighter border-none px-2 py-0 h-5",
-                    inv.status === 'Paid' ? 'bg-blue-500/10 text-blue-400' : 
-                    inv.status === 'Unpaid' ? 'bg-amber-500/10 text-amber-500' : 'bg-destructive/10 text-destructive'
-                  )}>
-                    {inv.status}
-                  </Badge>
-                </TableCell>
-                <TableCell className="pr-6 text-right">
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                      <Printer className="w-4 h-4" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                      <MoreVertical className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))}
+            {orders.map((order) => {
+              const created = order.created_at ? new Date(order.created_at) : null;
+              const status = order.status?.toLowerCase();
+              return (
+                <TableRow key={order.id} className="border-border hover:bg-muted/20">
+                  <TableCell className="font-mono text-[11px] text-muted-foreground py-4 pl-6">{order.id.slice(-8)}</TableCell>
+                  <TableCell className="text-[12px]">{created ? created.toLocaleDateString() : '--'}</TableCell>
+                  <TableCell className="text-[13px] font-medium">{order.table_id || 'Walk-in'}</TableCell>
+                  <TableCell className="text-[13px] font-bold text-foreground">{order.total.toFixed(2)}</TableCell>
+                  <TableCell className="text-[11px] font-mono text-muted-foreground uppercase">{order.currency}</TableCell>
+                  <TableCell>
+                    <Badge variant="outline" className={cn(
+                      "text-[9px] uppercase tracking-tighter border-none px-2 py-0 h-5",
+                      status === 'paid' ? 'bg-blue-500/10 text-blue-400' : 
+                      status === 'pending' ? 'bg-amber-500/10 text-amber-500' : 'bg-destructive/10 text-destructive'
+                    )}>
+                      {order.status}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="pr-6 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground"
+                        onClick={() => invoiceMutation.mutate(order.id)}
+                        disabled={invoiceMutation.isPending}
+                      >
+                        <Printer className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
+                        <MoreVertical className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
           </TableBody>
         </Table>
       </Card>

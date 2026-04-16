@@ -1,21 +1,32 @@
-import { Card, CardContent } from "../../components/ui/card";
+import { useMemo, useState } from "react";
+import { Card } from "../../components/ui/card";
 import { Package, Plus, Search, MoreHorizontal, Filter } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Input } from "../../components/ui/input";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { cn } from "../../lib/utils";
-
-const inventory = [
-  { id: '1', name: 'Premium Beef Brisket', category: 'Meats', stock: 45, unit: 'kg', status: 'In Stock', price: '$22.50' },
-  { id: '2', name: 'Fresh Salmon Fillet', category: 'Seafood', stock: 12, unit: 'kg', status: 'Low Stock', price: '$34.00' },
-  { id: '3', name: 'Organic Spinach', category: 'Produce', stock: 8, unit: 'kg', status: 'Critical', price: '$5.50' },
-  { id: '4', name: 'Truffle Oil', category: 'Dry Goods', stock: 15, unit: 'bottles', status: 'In Stock', price: '$85.00' },
-  { id: '5', name: 'House Red Wine', category: 'Beverages', stock: 120, unit: 'bottles', status: 'In Stock', price: '$18.00' },
-  { id: '6', name: 'Aged Balsamic', category: 'Dry Goods', stock: 30, unit: 'bottles', status: 'In Stock', price: '$42.00' },
-];
+import { useMenuItems } from "../../hooks";
 
 export const InventoryPage = () => {
+  const [search, setSearch] = useState('');
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const { data, isLoading, isError } = useMenuItems({ low_stock_only: lowStockOnly });
+
+  const items = useMemo(() => {
+    const list = data?.items ?? [];
+    if (!search.trim()) return list;
+    const term = search.toLowerCase();
+    return list.filter((item) => item.name.toLowerCase().includes(term));
+  }, [data, search]);
+
+  const lowStockCount = data?.items.filter((item) => {
+    if (item.low_stock_threshold === null || item.low_stock_threshold === undefined) {
+      return false;
+    }
+    return item.stock <= item.low_stock_threshold;
+  }).length ?? 0;
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
@@ -27,11 +38,20 @@ export const InventoryPage = () => {
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="bg-card border-border h-10 pl-10 text-sm w-80 focus-visible:ring-primary" placeholder="Search inventory items..." />
+            <Input
+              className="bg-card border-border h-10 pl-10 text-sm w-80 focus-visible:ring-primary"
+              placeholder="Search inventory items..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
           </div>
-          <Button variant="outline" className="border-border text-[10px] uppercase tracking-widest font-bold h-10 px-4">
+          <Button
+            variant="outline"
+            className="border-border text-[10px] uppercase tracking-widest font-bold h-10 px-4"
+            onClick={() => setLowStockOnly((prev) => !prev)}
+          >
             <Filter className="w-4 h-4 mr-2" />
-            Filter
+            {lowStockOnly ? 'Low Stock' : 'Filter'}
           </Button>
         </div>
         <Button className="bg-primary hover:bg-primary/90 text-white h-10 text-[10px] uppercase tracking-widest font-bold px-6">
@@ -42,10 +62,10 @@ export const InventoryPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         {[
-          { label: 'Total Value', value: '$45,230', change: '+12%', color: 'text-foreground' },
-          { label: 'Low Stock Items', value: '14', change: '-2', color: 'text-amber-500' },
-          { label: 'Pending Orders', value: '5', change: 'Live', color: 'text-blue-500' },
-          { label: 'Stock Turnover', value: '8.4x', change: 'Healthy', color: 'text-foreground' },
+          { label: 'Total Items', value: `${data?.total ?? 0}`, change: isLoading ? 'Loading' : 'All items', color: 'text-foreground' },
+          { label: 'Low Stock Items', value: `${lowStockCount}`, change: isLoading ? 'Loading' : 'Needs review', color: 'text-amber-500' },
+          { label: 'Filter Mode', value: lowStockOnly ? 'Low' : 'All', change: 'Current', color: 'text-blue-500' },
+          { label: 'Search Hits', value: `${items.length}`, change: 'Matches', color: 'text-foreground' },
         ].map((stat, i) => (
           <Card key={i} className="bg-card border-border shadow-none rounded-lg p-5">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-2 block">{stat.label}</span>
@@ -58,6 +78,11 @@ export const InventoryPage = () => {
       </div>
 
       <Card className="bg-card border-border shadow-none rounded-lg overflow-hidden">
+        {isError && (
+          <div className="p-4 text-[12px] text-destructive">
+            Inventory is currently unavailable.
+          </div>
+        )}
         <Table>
           <TableHeader className="bg-muted/30">
             <TableRow className="border-border hover:bg-transparent">
@@ -71,20 +96,29 @@ export const InventoryPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {inventory.map((item) => (
+            {items.map((item) => {
+              const threshold = item.low_stock_threshold ?? 0;
+              const status = item.stock <= 0
+                ? 'Out'
+                : item.stock <= threshold
+                  ? 'Low'
+                  : 'In Stock';
+              const category = item.tags?.[0] || item.spiceLevel || 'General';
+
+              return (
               <TableRow key={item.id} className="border-border hover:bg-muted/20">
-                <TableCell className="font-mono text-[11px] text-muted-foreground py-4 pl-6">#{item.id}</TableCell>
+                <TableCell className="font-mono text-[11px] text-muted-foreground py-4 pl-6">#{item.id.slice(-6)}</TableCell>
                 <TableCell className="font-medium text-[13px] py-4">{item.name}</TableCell>
-                <TableCell className="text-muted-foreground text-[12px]">{item.category}</TableCell>
-                <TableCell className="text-[13px]">{item.stock} {item.unit}</TableCell>
-                <TableCell className="text-[13px] font-mono text-muted-foreground">{item.price}</TableCell>
+                <TableCell className="text-muted-foreground text-[12px]">{category}</TableCell>
+                <TableCell className="text-[13px]">{item.stock} units</TableCell>
+                <TableCell className="text-[13px] font-mono text-muted-foreground">{item.price.toFixed(2)}</TableCell>
                 <TableCell>
                   <Badge variant="outline" className={cn(
                     "text-[9px] uppercase tracking-tighter border-none px-2 py-0 h-5",
-                    item.status === 'In Stock' ? 'bg-blue-500/10 text-blue-400' : 
-                    item.status === 'Low Stock' ? 'bg-amber-500/10 text-amber-500' : 'bg-destructive/10 text-destructive'
+                    status === 'In Stock' ? 'bg-blue-500/10 text-blue-400' : 
+                    status === 'Low' ? 'bg-amber-500/10 text-amber-500' : 'bg-destructive/10 text-destructive'
                   )}>
-                    {item.status}
+                    {status}
                   </Badge>
                 </TableCell>
                 <TableCell className="pr-6 text-right">
@@ -93,7 +127,7 @@ export const InventoryPage = () => {
                   </Button>
                 </TableCell>
               </TableRow>
-            ))}
+            )})}
           </TableBody>
         </Table>
       </Card>

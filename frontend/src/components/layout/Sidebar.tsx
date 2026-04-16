@@ -12,7 +12,6 @@ import {
   PlusCircle,
   BrainCircuit,
   Store,
-  Wallet,
   MessageSquare
 } from 'lucide-react';
 import { useAuthStore } from '../../store/useAuthStore';
@@ -49,11 +48,8 @@ export const Sidebar = () => {
   }, [activeRestaurantId, isOwner, restaurants, setActiveRestaurantId]);
 
   const getDashboardLink = () => {
-    if (user?.role === 'WAITER') return '/staff/waiter';
-    if (user?.role === 'CASHIER') return '/staff/cashier';
     if (user?.role === 'OWNER') return '/owner';
     if (user?.role === 'ADMIN') return '/admin';
-    if (user?.role === 'STAFF') return '/staff';
     return '/login';
   };
 
@@ -68,9 +64,9 @@ export const Sidebar = () => {
       ]
     },
     {
-      label: user?.role === 'OWNER' ? 'Portfolio' : user?.role === 'ADMIN' ? 'Administration' : 'Service',
+      label: user?.role === 'OWNER' ? 'Portfolio' : 'Administration',
       links: user?.role === 'OWNER' ? [
-        { to: '/owner/users', icon: Users, label: 'Staff Management' },
+        { to: '/owner/users', icon: Users, label: 'Admin Management' },
         { to: '/owner/revenue', icon: TrendingUp, label: 'Revenue Stream' },
         { to: '/owner/intelligence', icon: BrainCircuit, label: 'Strategy Node' },
         { to: '/owner/restaurants/new', icon: PlusCircle, label: 'Add Establishment' },
@@ -79,17 +75,9 @@ export const Sidebar = () => {
         { to: '/admin/tables', icon: TableIcon, label: 'Table Grid' },
         { to: '/admin/bookings', icon: Calendar, label: 'Bookings' },
         { to: '/admin/invoices', icon: CreditCard, label: 'Billing' },
-      ] : user?.role === 'WAITER' ? [
-        { to: '/staff/waiter', icon: TableIcon, label: 'Floor Map' },
-        { to: '/staff/orders/new', icon: UtensilsCrossed, label: 'Take Order' },
-      ] : user?.role === 'CASHIER' ? [
-        { to: '/staff/cashier', icon: Wallet, label: 'Checkout' },
-        { to: '/staff/payments', icon: CreditCard, label: 'Transactions' },
-      ] : [
-        { to: '/staff', icon: TableIcon, label: 'Table Status' },
-        { to: '/staff/orders/new', icon: UtensilsCrossed, label: 'New Order' },
-        { to: '/staff/payments', icon: CreditCard, label: 'Payments' },
-      ]
+        { to: '/admin/orders/new', icon: UtensilsCrossed, label: 'New Order' },
+        { to: '/admin/payments', icon: CreditCard, label: 'Payments' },
+      ] : []
     }
   ];
 

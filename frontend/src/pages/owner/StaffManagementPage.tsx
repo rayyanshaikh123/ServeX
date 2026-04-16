@@ -1,17 +1,15 @@
-import { Card, CardContent } from "../../components/ui/card";
-import { Users, UserPlus, Search, Filter, Mail, Shield, MoreVertical, Trash2, CheckCircle2, Clock } from "lucide-react";
+import { Card } from "../../components/ui/card";
+import { Users, UserPlus, Search, Filter, Shield, MoreVertical, Trash2, CheckCircle2 } from "lucide-react";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { Input } from "../../components/ui/input";
 import { cn } from "../../lib/utils";
 
-const staffList = [
-  { id: '1', name: 'Sarah Wilson', role: 'ADMIN', email: 'sarah@servex.com', status: 'Active', shift: 'Morning', joinDate: 'Jan 2024' },
-  { id: '2', name: 'Mike Johnson', role: 'STAFF', email: 'mike@servex.com', status: 'Active', shift: 'Evening', joinDate: 'Feb 2024' },
-  { id: '3', name: 'Emily Brown', role: 'STAFF', email: 'emily@servex.com', status: 'On Leave', shift: 'N/A', joinDate: 'Mar 2023' },
-  { id: '4', name: 'David Miller', role: 'ADMIN', email: 'david@servex.com', status: 'Active', shift: 'Full-time', joinDate: 'Dec 2023' },
-  { id: '5', name: 'Anna Taylor', role: 'STAFF', email: 'anna@servex.com', status: 'Active', shift: 'Morning', joinDate: 'Apr 2024' },
+const adminList = [
+  { id: '1', name: 'Sarah Wilson', role: 'ADMIN', email: 'sarah@servex.com', status: 'Active', joinDate: 'Jan 2024' },
+  { id: '2', name: 'David Miller', role: 'ADMIN', email: 'david@servex.com', status: 'Active', joinDate: 'Dec 2023' },
+  { id: '3', name: 'Anna Taylor', role: 'ADMIN', email: 'anna@servex.com', status: 'Active', joinDate: 'Apr 2024' },
 ];
 
 export const StaffManagementPage = () => {
@@ -19,14 +17,14 @@ export const StaffManagementPage = () => {
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
         <h1 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">Human Resources</h1>
-        <h2 className="text-2xl font-serif italic text-foreground tracking-tight">Staff Management</h2>
+        <h2 className="text-2xl font-serif italic text-foreground tracking-tight">Admin Management</h2>
       </div>
 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input className="bg-card border-border h-10 pl-10 text-sm w-80 focus-visible:ring-primary" placeholder="Search staff members..." />
+            <Input className="bg-card border-border h-10 pl-10 text-sm w-80 focus-visible:ring-primary" placeholder="Search admins..." />
           </div>
           <Button variant="outline" className="border-border text-[10px] uppercase tracking-widest font-bold h-10 px-4">
             <Filter className="w-4 h-4 mr-2" />
@@ -35,34 +33,34 @@ export const StaffManagementPage = () => {
         </div>
         <Button className="bg-primary hover:bg-primary/90 text-white h-10 text-[10px] uppercase tracking-widest font-bold px-6">
           <UserPlus className="w-4 h-4 mr-2" />
-          Onboard Staff
+          Add Admin
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card className="bg-card border-border shadow-none rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Total Personnel</span>
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Total Admins</span>
             <Users className="w-4 h-4 text-muted-foreground" />
           </div>
-          <span className="text-3xl font-light text-foreground">14</span>
-          <p className="text-[10px] text-emerald-500 mt-2 italic">+2 from last month</p>
+          <span className="text-3xl font-light text-foreground">{adminList.length}</span>
+          <p className="text-[10px] text-emerald-500 mt-2 italic">Active management accounts</p>
         </Card>
         <Card className="bg-card border-border shadow-none rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Privileged Access</span>
             <Shield className="w-4 h-4 text-muted-foreground" />
           </div>
-          <span className="text-3xl font-light text-foreground">04</span>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">Admin Role Designation</p>
+          <span className="text-3xl font-light text-foreground">{adminList.length}</span>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">Admin role designation</p>
         </Card>
         <Card className="bg-card border-border shadow-none rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
-            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Staff On-Shift</span>
-            <Clock className="w-4 h-4 text-muted-foreground" />
+            <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Admins Active</span>
+            <Users className="w-4 h-4 text-muted-foreground" />
           </div>
-          <span className="text-3xl font-light tracking-tight text-primary">08</span>
-          <p className="text-[10px] text-muted-foreground mt-2 italic">Active in current terminal</p>
+          <span className="text-3xl font-light tracking-tight text-primary">{adminList.length}</span>
+          <p className="text-[10px] text-muted-foreground mt-2 italic">Currently active</p>
         </Card>
       </div>
 
@@ -79,7 +77,7 @@ export const StaffManagementPage = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {staffList.map((member) => (
+            {adminList.map((member) => (
               <TableRow key={member.id} className="border-border hover:bg-muted/20">
                 <TableCell className="py-4 pl-6">
                   <div className="flex items-center gap-3">
@@ -100,11 +98,11 @@ export const StaffManagementPage = () => {
                     {member.role}
                   </Badge>
                 </TableCell>
-                <TableCell className="text-[13px] text-muted-foreground">{member.shift}</TableCell>
+                <TableCell className="text-[13px] text-muted-foreground">Full Access</TableCell>
                 <TableCell>
                   <div className="flex items-center gap-1">
                     {[1, 2, 3].map(i => (
-                      <div key={i} className={cn("w-2 h-2 rounded-full", i <= (member.role === 'ADMIN' ? 3 : 1) ? "bg-primary" : "bg-muted")} />
+                      <div key={i} className={cn("w-2 h-2 rounded-full", i <= 3 ? "bg-primary" : "bg-muted")} />
                     ))}
                   </div>
                 </TableCell>
@@ -134,7 +132,7 @@ export const StaffManagementPage = () => {
          <Card className="bg-card border-border shadow-none rounded-lg p-6">
             <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-6 block">Join Velocity</span>
             <div className="space-y-4">
-               {staffList.slice(0, 3).map((member, i) => (
+               {adminList.slice(0, 3).map((member, i) => (
                  <div key={i} className="flex items-center justify-between text-sm">
                    <span className="text-muted-foreground">{member.name}</span>
                    <span className="font-mono text-[11px] text-primary">{member.joinDate}</span>

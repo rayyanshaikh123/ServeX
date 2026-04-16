@@ -48,6 +48,9 @@ class Settings(BaseSettings):
     llm_timeout_s: int = Field(60, alias="LLM_TIMEOUT_S")
 
     seed_restaurant_id: str = Field("servex-demo", alias="SEED_RESTAURANT_ID")
+    seed_admin_email: str = Field("admin@servex.com", alias="SEED_ADMIN_EMAIL")
+    seed_admin_password: str = Field("Admin@12345", alias="SEED_ADMIN_PASSWORD")
+    seed_admin_restaurant_name: str = Field("ServeX HQ", alias="SEED_ADMIN_RESTAURANT_NAME")
 
     jwt_secret: str = Field("change-me", alias="JWT_SECRET")
     jwt_algorithm: str = Field("HS256", alias="JWT_ALGORITHM")

@@ -1,5 +1,5 @@
-export type ApiRole = 'owner' | 'admin' | 'staff' | 'waiter' | 'cashier';
-export type Role = 'OWNER' | 'ADMIN' | 'STAFF' | 'WAITER' | 'CASHIER';
+export type ApiRole = 'owner' | 'admin';
+export type Role = 'OWNER' | 'ADMIN';
 
 export interface AuthTokens {
   access_token: string;

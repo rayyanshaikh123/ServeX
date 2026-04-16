@@ -51,7 +51,7 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
           { role: 'user', parts: [{ text: `You are ServeX AI assistant. The current user is ${user?.name} with the role of ${user?.role}. Assist them with restaurant management queries. Query: ${userMessage}` }] }
         ],
         config: {
-          systemInstruction: "You are a specialized AI for restaurant operations. Keep your responses concise, professional, and helpful for restaurant managers, admins, and staff."
+          systemInstruction: "You are a specialized AI for restaurant operations. Keep your responses concise, professional, and helpful for restaurant owners and admins."
         }
       });
 

@@ -1,5 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "../../components/ui/card";
-import { TrendingUp, Users, DollarSign, ShoppingBag, ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { Card } from "../../components/ui/card";
+import { TrendingUp, Users, DollarSign, ShoppingBag } from "lucide-react";
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, BarChart, Bar } from "recharts";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "../../components/ui/table";
 import { Badge } from "../../components/ui/badge";
@@ -15,11 +15,10 @@ const data = [
   { name: 'Jul', revenue: 3490, orders: 250 },
 ];
 
-const staff = [
+const admins = [
   { name: 'Sarah Wilson', role: 'ADMIN', email: 'sarah@servex.com', status: 'Active' },
-  { name: 'Mike Johnson', role: 'STAFF', email: 'mike@servex.com', status: 'Active' },
-  { name: 'Emily Brown', role: 'STAFF', email: 'emily@servex.com', status: 'On Leave' },
   { name: 'David Miller', role: 'ADMIN', email: 'david@servex.com', status: 'Active' },
+  { name: 'Anna Taylor', role: 'ADMIN', email: 'anna@servex.com', status: 'Active' },
 ];
 
 export const OwnerDashboard = () => {
@@ -35,7 +34,7 @@ export const OwnerDashboard = () => {
           { label: 'Total Revenue (Daily)', value: '$45,231.89', change: '+14.2% from yesterday', icon: DollarSign },
           { label: 'Active Orders', value: '18', change: '4 Pending Pickup', icon: ShoppingBag },
           { label: 'Inventory Health', value: '94%', change: '2 items low stock', icon: Users, alert: true },
-          { label: 'Staff Online', value: '12 / 14', change: 'Shift change in 18m', icon: TrendingUp },
+          { label: 'Admins Online', value: `${admins.length}`, change: 'Active accounts', icon: TrendingUp },
         ].map((kpi, i) => (
           <Card key={i} className="bg-card border-border shadow-none rounded-lg p-5 flex flex-col justify-between">
             <div className="flex items-center justify-between mb-4">
@@ -119,7 +118,7 @@ export const OwnerDashboard = () => {
 
       <Card className="bg-card border-border shadow-none rounded-lg overflow-hidden">
         <div className="p-6 border-b border-border">
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Team Overview</span>
+          <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold">Admin Overview</span>
         </div>
         <Table className="border-none">
           <TableHeader className="bg-muted/30">
@@ -131,7 +130,7 @@ export const OwnerDashboard = () => {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {staff.map((member) => (
+            {admins.map((member) => (
               <TableRow key={member.email} className="border-border hover:bg-muted/20">
                 <TableCell className="font-medium text-[13px] py-4">{member.name}</TableCell>
                 <TableCell>

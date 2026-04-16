@@ -1,16 +1,17 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { UtensilsCrossed, AlertCircle } from 'lucide-react';
 import { useAuthStore } from '../store/useAuthStore';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '../components/ui/card';
-import { ApiRole, ApiUser, Role, User } from '../types';
+import { Card } from '../components/ui/card';
 import api from '../lib/api';
-import { loginRequest } from '../lib/auth';
+import { registerRequest } from '../lib/auth';
+import { ApiUser, Role, User } from '../types';
 
-export const Login = () => {
+export const Register = () => {
+  const [restaurantName, setRestaurantName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,36 +19,27 @@ export const Login = () => {
   const navigate = useNavigate();
   const { setUser, setTokens, setActiveRestaurantId } = useAuthStore();
 
-  const normalizeRole = (role: ApiRole | string): Role => {
-    return role.toLowerCase() === 'owner' ? 'OWNER' : 'ADMIN';
-  };
-
   const buildDisplayName = (value: string) => {
     const prefix = value.split('@')[0]?.replace(/[._-]+/g, ' ').trim();
-    if (!prefix) return 'User';
+    if (!prefix) return 'Owner';
     return prefix.charAt(0).toUpperCase() + prefix.slice(1);
   };
 
-  const getRedirectPath = (role: Role) => {
-    return role === 'OWNER' ? '/owner' : '/admin';
-  };
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleRegister = async (event: React.FormEvent) => {
+    event.preventDefault();
     setError('');
     setIsLoading(true);
 
     try {
-      const tokens = await loginRequest(email, password);
+      const tokens = await registerRequest(restaurantName, email, password);
       setTokens(tokens.access_token, tokens.refresh_token);
 
       const { data: me } = await api.get<ApiUser>('/api/users/me');
-      const normalizedRole = normalizeRole(me.role);
       const user: User = {
         id: me.id,
         restaurant_id: me.restaurant_id,
         email: me.email,
-        role: normalizedRole,
+        role: 'OWNER' as Role,
         name: buildDisplayName(me.email),
         is_active: me.is_active,
         created_at: me.created_at,
@@ -55,13 +47,13 @@ export const Login = () => {
 
       setUser(user);
       setActiveRestaurantId(me.restaurant_id);
-      navigate(getRedirectPath(normalizedRole));
+      navigate('/owner');
     } catch (err) {
       if (axios.isAxiosError(err)) {
         const detail = err.response?.data?.detail;
-        setError(detail || 'Login failed. Please check your credentials.');
+        setError(detail || 'Registration failed. Please try again.');
       } else {
-        setError('Login failed. Please try again.');
+        setError('Registration failed. Please try again.');
       }
     } finally {
       setIsLoading(false);
@@ -76,31 +68,42 @@ export const Login = () => {
             <UtensilsCrossed className="w-12 h-12 text-primary" />
           </div>
           <h1 className="text-3xl font-serif italic text-foreground mb-2">ServeX</h1>
-          <p className="text-sm text-muted-foreground uppercase tracking-widest font-medium">Unified Management Terminal</p>
+          <p className="text-sm text-muted-foreground uppercase tracking-widest font-medium">Owner Registration</p>
         </div>
 
         <div className="p-8 space-y-6">
-          <form onSubmit={handleLogin} className="space-y-6">
+          <form onSubmit={handleRegister} className="space-y-6">
             <div className="space-y-4">
               <div className="space-y-2">
-                <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground pl-1">Access Email</label>
-                <Input 
-                  type="email" 
-                  placeholder="identity@servex.com" 
+                <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground pl-1">Restaurant Name</label>
+                <Input
+                  type="text"
+                  placeholder="ServeX Lounge"
+                  className="bg-background border-border h-12 text-sm focus-visible:ring-primary"
+                  value={restaurantName}
+                  onChange={(event) => setRestaurantName(event.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground pl-1">Owner Email</label>
+                <Input
+                  type="email"
+                  placeholder="owner@servex.com"
                   className="bg-background border-border h-12 text-sm focus-visible:ring-primary"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(event) => setEmail(event.target.value)}
                   required
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-[10px] uppercase tracking-widest font-bold text-muted-foreground pl-1">Secure Key</label>
-                <Input 
-                  type="password" 
-                  placeholder="••••••••" 
+                <Input
+                  type="password"
+                  placeholder="••••••••"
                   className="bg-background border-border h-12 text-sm focus-visible:ring-primary"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(event) => setPassword(event.target.value)}
                   required
                 />
               </div>
@@ -113,18 +116,19 @@ export const Login = () => {
               </div>
             )}
 
-            <Button 
+            <Button
               type="submit"
               disabled={isLoading}
               className="w-full bg-primary hover:bg-primary/90 text-white h-12 text-[11px] uppercase tracking-[0.2em] font-bold"
             >
-              {isLoading ? 'Initializing...' : 'Initialize Session'}
+              {isLoading ? 'Creating...' : 'Create Owner Account'}
             </Button>
           </form>
+
           <div className="pt-4 border-t border-border text-center text-[11px] text-muted-foreground">
-            New owner?{' '}
-            <Link to="/register" className="text-primary font-semibold hover:underline">
-              Create your account
+            Already have an account?{' '}
+            <Link to="/login" className="text-primary font-semibold hover:underline">
+              Sign in
             </Link>
           </div>
         </div>

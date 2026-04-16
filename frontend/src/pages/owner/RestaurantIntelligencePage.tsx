@@ -17,7 +17,7 @@ CORE_ANALYTICS:
 - Current Conversion: 32.4%
 - Top Performance Peak: 19:00 - 21:00 Friday
 - Inventory Health: 92% (Truffle items critically low)
-- Staff Efficiency Index: 0.88
+- Service Efficiency Index: 0.88
 DIRECTIVES: "Optimize for high-net-worth quick dining. Prioritize VIP terrace reservations."
 `;
 
@@ -92,7 +92,7 @@ export const RestaurantIntelligencePage = () => {
                  {[
                    { label: 'Yield Analytics', icon: BarChart3, status: 'Synced' },
                    { label: 'Inventory Matrix', icon: Zap, status: 'Synced' },
-                   { label: 'Personnel Performance', icon: Fingerprint, status: 'Synced' },
+                   { label: 'Operations Performance', icon: Fingerprint, status: 'Synced' },
                  ].map((item, i) => (
                    <div key={i} className="flex flex-col gap-2 p-3 bg-muted/10 rounded-lg border border-border/50">
                       <div className="flex justify-between items-center">
@@ -113,7 +113,7 @@ export const RestaurantIntelligencePage = () => {
            <Card className="bg-card border-border shadow-none rounded-xl p-6 border-l-primary border-l-2">
               <span className="text-[10px] uppercase tracking-widest text-muted-foreground font-bold mb-4 block italic">Neural Insight</span>
               <p className="text-[12px] text-muted-foreground leading-relaxed italic">
-                AI has identified a recurring throughput bottleneck at Table 12. Recommend re-assigning <span className="text-foreground font-bold">Priority Waiter</span> during Peak Friday Block.
+                AI has identified a recurring throughput bottleneck at Table 12. Recommend re-assigning <span className="text-foreground font-bold">Priority Service Lead</span> during Peak Friday Block.
               </p>
            </Card>
         </div>

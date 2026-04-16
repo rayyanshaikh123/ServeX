@@ -1,21 +1,39 @@
-import { Card, CardContent } from "../../components/ui/card";
+import { useMemo } from "react";
+import { Card } from "../../components/ui/card";
 import { Utensils, Plus, RotateCcw, LayoutGrid, CheckCircle2, XCircle, MoreVertical, Users } from "lucide-react";
 import { Button } from "../../components/ui/button";
 import { Badge } from "../../components/ui/badge";
 import { cn } from "../../lib/utils";
-
-const tables = [
-  { id: 'T1', number: 1, seats: 2, status: 'AVAILABLE', section: 'Main Hall' },
-  { id: 'T2', number: 2, seats: 4, status: 'OCCUPIED', section: 'Main Hall' },
-  { id: 'T3', number: 3, seats: 4, status: 'RESERVED', section: 'Main Hall' },
-  { id: 'T4', number: 4, seats: 6, status: 'CLEANING', section: 'Terrace' },
-  { id: 'T5', number: 5, seats: 2, status: 'AVAILABLE', section: 'Terrace' },
-  { id: 'T6', number: 6, seats: 8, status: 'OCCUPIED', section: 'VIP' },
-  { id: 'T7', number: 7, seats: 4, status: 'AVAILABLE', section: 'Main Hall' },
-  { id: 'T8', number: 8, seats: 2, status: 'AVAILABLE', section: 'Bar' },
-];
+import { useTables } from "../../hooks";
 
 export const TablesPage = () => {
+  const { data, isLoading, isError } = useTables();
+
+  const tables = useMemo(() => data?.items ?? [], [data]);
+
+  const statusLabel = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case 'free':
+        return 'AVAILABLE';
+      case 'occupied':
+        return 'OCCUPIED';
+      case 'reserved':
+        return 'RESERVED';
+      case 'cleaning':
+        return 'CLEANING';
+      default:
+        return status?.toUpperCase() || 'UNKNOWN';
+    }
+  };
+
+  const counts = useMemo(() => {
+    const total = tables.length;
+    const available = tables.filter((table) => statusLabel(table.status) === 'AVAILABLE').length;
+    const occupied = tables.filter((table) => statusLabel(table.status) === 'OCCUPIED').length;
+    const cleaning = tables.filter((table) => statusLabel(table.status) === 'CLEANING').length;
+    return { total, available, occupied, cleaning };
+  }, [tables]);
+
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
       <div className="flex flex-col gap-1">
@@ -47,10 +65,10 @@ export const TablesPage = () => {
 
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         {[
-          { label: 'Total', value: '24', icon: RotateCcw },
-          { label: 'Available', value: '12', icon: CheckCircle2, color: 'text-blue-500' },
-          { label: 'Occupied', value: '8', icon: Utensils, color: 'text-foreground' },
-          { label: 'Cleaning', value: '4', icon: XCircle, color: 'text-amber-500' },
+          { label: 'Total', value: `${counts.total}`, icon: RotateCcw },
+          { label: 'Available', value: `${counts.available}`, icon: CheckCircle2, color: 'text-blue-500' },
+          { label: 'Occupied', value: `${counts.occupied}`, icon: Utensils, color: 'text-foreground' },
+          { label: 'Cleaning', value: `${counts.cleaning}`, icon: XCircle, color: 'text-amber-500' },
         ].map((stat, i) => (
           <Card key={i} className="bg-card border-border shadow-none rounded-lg p-4 flex flex-col items-center justify-center text-center">
             <span className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold mb-1">{stat.label}</span>
@@ -59,20 +77,26 @@ export const TablesPage = () => {
         ))}
       </div>
 
+      {isError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/10 p-3 text-[12px] text-destructive">
+          Tables are currently unavailable.
+        </div>
+      )}
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {tables.map(table => (
           <Card key={table.id} className="bg-card border-border shadow-none rounded-lg p-6 group hover:border-primary/50 transition-colors">
             <div className="flex justify-between items-start mb-6">
               <div className="flex flex-col">
-                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">{table.section}</span>
-                <span className="text-2xl font-light text-foreground">{table.id}</span>
+                <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest mb-1">Dining Area</span>
+                <span className="text-2xl font-light text-foreground">{table.name}</span>
               </div>
               <Badge variant="outline" className={cn(
                 "text-[9px] uppercase tracking-tighter border-none px-2 py-0 h-5",
-                table.status === 'AVAILABLE' ? 'bg-blue-500/10 text-blue-400' : 
-                table.status === 'CLEANING' ? 'bg-amber-500/10 text-amber-500' : 'bg-destructive/10 text-destructive'
+                statusLabel(table.status) === 'AVAILABLE' ? 'bg-blue-500/10 text-blue-400' : 
+                statusLabel(table.status) === 'CLEANING' ? 'bg-amber-500/10 text-amber-500' : 'bg-destructive/10 text-destructive'
               )}>
-                {table.status}
+                {statusLabel(table.status)}
               </Badge>
             </div>
             
@@ -83,7 +107,7 @@ export const TablesPage = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[9px] uppercase font-bold text-muted-foreground tracking-widest">Capacity</span>
-                    <span className="text-[13px] text-foreground">{table.seats} Guests Max</span>
+                      <span className="text-[13px] text-foreground">{table.capacity} Guests Max</span>
                   </div>
                </div>
             </div>
