@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles, ShieldCheck, Waves } from 'lucide-react';
 import { Button } from '../../components/ui/button';
+import { Card } from '../../components/ui/card';
 
 export const LandingPage = () => {
   return (
@@ -31,18 +32,50 @@ export const LandingPage = () => {
               ServeX is the operational brain for modern restaurants. Automate table flow, monitor revenue,
               and let your team act with clarity using role-based dashboards and live updates.
             </p>
-            <div className="flex flex-wrap gap-4">
+            <div className="flex flex-wrap gap-4 pt-4">
               <Link to="/register">
-                <Button className="h-12 rounded-full bg-black px-6 text-[11px] uppercase tracking-[0.3em] text-white hover:bg-black/90">
-                  Start as Owner
+                <Button className="h-12 rounded-full bg-black px-6 text-[11px] uppercase tracking-[0.3em] text-white hover:bg-black/90 shadow-xl shadow-black/10">
+                  Business Owner
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </Link>
               <Link to="/login">
                 <Button variant="outline" className="h-12 rounded-full border-black/20 px-6 text-[11px] uppercase tracking-[0.3em]">
-                  Admin Login
+                  Staff Login
                 </Button>
               </Link>
+            </div>
+
+            <div className="pt-8 border-t border-black/5">
+              <h3 className="text-[10px] uppercase tracking-[0.3em] font-black text-black/40 mb-4">Experience the floor</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Card className="p-4 bg-white/50 border-black/5 hover:border-black/20 transition-all group cursor-pointer">
+                  <Link to="/menu/69e284b3e319a96bd0b43a6d/T1" className="block">
+                    <div className="flex items-center justify-between">
+                       <div className="flex flex-col">
+                         <span className="text-[11px] font-bold uppercase tracking-widest text-[#1f1c17]">Guest Menu</span>
+                         <span className="text-[10px] text-black/40">Demo: Table 01</span>
+                       </div>
+                       <Button size="icon" variant="ghost" className="rounded-full group-hover:bg-black group-hover:text-white transition-all">
+                          <ArrowRight className="w-4 h-4" />
+                       </Button>
+                    </div>
+                  </Link>
+                </Card>
+                <Card className="p-4 bg-white/50 border-black/5 hover:border-black/20 transition-all group cursor-pointer">
+                  <Link to="/admin" className="block">
+                    <div className="flex items-center justify-between">
+                       <div className="flex flex-col">
+                         <span className="text-[11px] font-bold uppercase tracking-widest text-[#1f1c17]">Staff Dashboard</span>
+                         <span className="text-[10px] text-black/40">Operation Center</span>
+                       </div>
+                       <Button size="icon" variant="ghost" className="rounded-full group-hover:bg-black group-hover:text-white transition-all">
+                          <ArrowRight className="w-4 h-4" />
+                       </Button>
+                    </div>
+                  </Link>
+                </Card>
+              </div>
             </div>
           </section>
 

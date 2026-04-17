@@ -13,6 +13,7 @@ from app.routes.bookings import router as bookings_router
 from app.routes.analytics import router as analytics_router
 from app.routes.realtime import router as realtime_router
 from app.routes.tables import router as tables_router
+from app.routes.menu import router as menu_router
 from app.routes.orders import router as orders_router
 from app.routes.payments import router as payments_router
 from app.routes.restaurants import router as restaurants_router
@@ -21,11 +22,7 @@ from app.routes.users import router as users_router
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    logging.basicConfig(level=logging.DEBUG)
-    logging.getLogger('httpx').setLevel(logging.WARNING)
-    logging.getLogger('httpcore').setLevel(logging.WARNING)
-    logging.getLogger('sentence_transformers').setLevel(logging.WARNING)
-    logging.getLogger('huggingface_hub').setLevel(logging.WARNING)
+    logging.basicConfig(level=logging.INFO)
 
     app = FastAPI(title=settings.app_name, version="1.0.0")
 
@@ -41,6 +38,7 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(bookings_router)
     app.include_router(inventory_router)
+    app.include_router(menu_router)
     app.include_router(orders_router)
     app.include_router(payments_router)
     app.include_router(restaurants_router)

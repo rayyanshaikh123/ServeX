@@ -42,6 +42,7 @@ async def create_user(
     hashed_password: str,
     role: Role,
     restaurant_id: str,
+    user_id: Optional[str] = None,
 ) -> str:
     collection = get_users_collection()
     doc = {
@@ -52,6 +53,8 @@ async def create_user(
         "is_active": True,
         "created_at": datetime.utcnow(),
     }
+    if user_id:
+        doc["_id"] = ObjectId(user_id)
     result = await collection.insert_one(doc)
     return str(result.inserted_id)
 

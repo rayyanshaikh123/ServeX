@@ -22,7 +22,7 @@ def _menu_to_text(item: Dict) -> str:
     return (
         f"{item.get('name', '')}. Price {item.get('price', '')}. "
         f"Veg {item.get('isVeg', '')}. Spice {item.get('spiceLevel', '')}. "
-        f"Tags {tags}."
+        f"Tags {tags}. Time to cook {item.get('time_to_cook', 0)} mins."
     )
 
 
@@ -91,7 +91,7 @@ async def get_menu_item(restaurant_id: str, item_id: str) -> Optional[Dict]:
     return await collection.find_one(query)
 
 
-async def create_menu_item(restaurant_id: str, payload: Dict) -> Dict:
+async def create_menu_item(restaurant_id: str, payload: Dict, item_id: Optional[str] = None) -> Dict:
     settings = get_settings()
     collection = get_menu_collection()
     now = datetime.utcnow()
@@ -108,12 +108,15 @@ async def create_menu_item(restaurant_id: str, payload: Dict) -> Dict:
         "tags": payload.get("tags") or [],
         "stock": payload.get("stock", 0),
         "low_stock_threshold": low_threshold,
+        "time_to_cook": payload.get("time_to_cook", 0),
         "embedding_status": "pending",
         "embedding_error": None,
         "embedding_updated_at": None,
         "created_at": now,
         "updated_at": now,
     }
+    if item_id:
+        doc["_id"] = ObjectId(item_id)
     result = await collection.insert_one(doc)
     doc["_id"] = result.inserted_id
 

@@ -8,10 +8,14 @@ class MenuCreateRequest(BaseModel):
     name: str = Field(..., min_length=2, max_length=200)
     price: float = Field(..., ge=0)
     isVeg: bool
+    category: str = Field(..., min_length=2, max_length=50)
+    description: Optional[str] = Field(None, max_length=1000)
+    image_url: Optional[str] = None
     spiceLevel: str = Field(..., min_length=2, max_length=30)
     tags: List[str] = Field(default_factory=list)
     stock: int = Field(0, ge=0)
     low_stock_threshold: Optional[int] = Field(None, ge=0)
+    time_to_cook: int = Field(0, ge=0)
 
 
 class MenuUpdateRequest(BaseModel):
@@ -22,6 +26,7 @@ class MenuUpdateRequest(BaseModel):
     tags: Optional[List[str]] = None
     stock: Optional[int] = Field(None, ge=0)
     low_stock_threshold: Optional[int] = Field(None, ge=0)
+    time_to_cook: Optional[int] = Field(None, ge=0)
 
 
 class MenuResponse(BaseModel):
@@ -30,6 +35,9 @@ class MenuResponse(BaseModel):
     name: str
     price: float
     isVeg: bool
+    category: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     spiceLevel: str
     tags: List[str]
     stock: int
@@ -39,6 +47,7 @@ class MenuResponse(BaseModel):
     embedding_updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    time_to_cook: int
 
 
 class MenuListResponse(BaseModel):

@@ -1,3 +1,4 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.rbac import require_roles
@@ -134,6 +135,18 @@ async def update_order_status_endpoint(
         current_user.restaurant_id,
         {"type": "order.updated", "data": _order_response(doc).model_dump()},
     )
+
+    # Auto-generate invoice when order is served
+    if payload.status == "served":
+        try:
+            invoice_doc = await create_or_get_invoice(current_user.restaurant_id, order_id)
+            await manager.broadcast(
+                current_user.restaurant_id,
+                {"type": "invoice.created", "data": _invoice_response(invoice_doc).model_dump()},
+            )
+        except Exception as e:
+            logger.error(f"Failed to auto-generate invoice for order {order_id}: {e}")
+
     return _order_response(doc)
 
 
@@ -163,3 +176,22 @@ async def generate_invoice_endpoint(
         {"type": "invoice.created", "data": _invoice_response(doc).model_dump()},
     )
     return _invoice_response(doc)
+@router.post("/public/{restaurant_id}", response_model=OrderResponse)
+async def create_public_order_endpoint(
+    restaurant_id: str,
+    payload: OrderCreateRequest,
+) -> OrderResponse:
+    """Public endpoint for guests to place orders without authentication."""
+    try:
+        doc = await create_order(
+            restaurant_id, payload.model_dump(), created_by=f"guest-table-{payload.table_id or 'unknown'}"
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    manager = get_realtime_manager()
+    await manager.broadcast(
+        restaurant_id,
+        {"type": "order.created", "data": _order_response(doc).model_dump()},
+    )
+    return _order_response(doc)

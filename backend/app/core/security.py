@@ -123,3 +123,30 @@ async def get_current_user(
         is_active=user.get("is_active", True),
         created_at=user.get("created_at"),
     )
+async def get_optional_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(_bearer),
+) -> CurrentUser | None:
+    if credentials is None or not credentials.credentials:
+        return None
+    try:
+        payload = decode_token(credentials.credentials)
+    except Exception:
+        return None
+
+    if payload.get("type") != "access":
+        return None
+
+    user = await get_user_by_id(payload.get("sub"))
+    if not user or not user.get("is_active", True):
+        return None
+    if user.get("restaurant_id") != payload.get("restaurant_id"):
+        return None
+
+    return CurrentUser(
+        id=str(user["_id"]),
+        restaurant_id=user["restaurant_id"],
+        email=user["email"],
+        role=user["role"],
+        is_active=user.get("is_active", True),
+        created_at=user.get("created_at"),
+    )

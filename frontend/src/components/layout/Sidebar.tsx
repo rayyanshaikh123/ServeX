@@ -47,7 +47,7 @@ export const Sidebar = () => {
     setActiveRestaurantId(restaurants[0].id);
   }, [activeRestaurantId, isOwner, restaurants, setActiveRestaurantId]);
 
-  const getDashboardLink = () => {
+  const get_dashboard_link = () => {
     if (user?.role === 'OWNER') return '/owner';
     if (user?.role === 'ADMIN') return '/admin';
     return '/login';
@@ -57,7 +57,7 @@ export const Sidebar = () => {
     {
       label: 'Overview',
       links: [
-        { to: getDashboardLink(), icon: LayoutDashboard, label: 'Dashboard' },
+        { to: get_dashboard_link(), icon: LayoutDashboard, label: user?.role === 'ADMIN' ? 'Command Center' : 'Dashboard' },
         { to: '/chat', icon: MessageSquare, label: 'AI Chat' },
         { to: '/analytics', icon: TrendingUp, label: 'Analytics' },
         { to: '/revenue', icon: TrendingUp, label: 'Revenue' },

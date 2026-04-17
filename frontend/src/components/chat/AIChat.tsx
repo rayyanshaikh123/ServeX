@@ -16,9 +16,10 @@ interface Message {
 
 interface AIChatProps {
   variant?: 'widget' | 'page';
+  guestRestaurantId?: string;
 }
 
-export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
+export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) => {
   const [isOpen, setIsOpen] = useState(variant === 'page');
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
@@ -26,7 +27,7 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuthStore();
+  const { user, activeRestaurantId } = useAuthStore();
   const isPage = variant === 'page';
   const isWidget = !isPage;
 
@@ -52,7 +53,11 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
           'Content-Type': 'application/json',
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
-        body: JSON.stringify({ query: userMessage, session_id: 'default-session' })
+        body: JSON.stringify({ 
+          query: userMessage, 
+          session_id: 'default-session',
+          restaurant_id: activeRestaurantId || guestRestaurantId 
+        })
       });
 
       if (!res.ok) throw new Error('API request failed');

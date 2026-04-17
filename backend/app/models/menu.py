@@ -19,6 +19,7 @@ class MenuItem(BaseModel):
     embedding_updated_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
+    time_to_cook: int = 0
     score: Optional[float] = None
 
     model_config = {"populate_by_name": True}

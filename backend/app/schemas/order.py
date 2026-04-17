@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field
 class OrderItemCreateRequest(BaseModel):
     menu_item_id: str
     quantity: int = Field(..., ge=1, le=1000)
+    instructions: Optional[str] = Field(None, max_length=500)
 
 
 class OrderCreateRequest(BaseModel):
@@ -25,6 +26,8 @@ class OrderItemResponse(BaseModel):
     quantity: int
     unit_price: float
     total: float
+    instructions: Optional[str] = None
+    time_to_cook: int
 
 
 class OrderResponse(BaseModel):

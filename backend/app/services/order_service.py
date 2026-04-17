@@ -10,7 +10,8 @@ from app.db.mongo import get_menu_collection, get_orders_collection
 _ALLOWED_TRANSITIONS = {
     "pending": {"confirmed"},
     "confirmed": {"preparing"},
-    "preparing": {"served"},
+    "preparing": {"ready"},
+    "ready": {"served"},
     "served": {"paid"},
     "paid": {"closed"},
     "closed": set(),
@@ -47,6 +48,8 @@ def _normalize_items(
                 "quantity": quantity,
                 "unit_price": unit_price,
                 "total": line_total,
+                "instructions": item.get("instructions"),
+                "time_to_cook": menu_doc.get("time_to_cook", 0),
             }
         )
     return normalized, subtotal

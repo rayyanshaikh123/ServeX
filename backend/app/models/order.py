@@ -10,6 +10,8 @@ class OrderItem(BaseModel):
     quantity: int
     unit_price: float
     total: float
+    instructions: Optional[str] = None
+    time_to_cook: int = 0
 
 
 class Order(BaseModel):

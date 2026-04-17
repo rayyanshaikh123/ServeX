@@ -22,6 +22,8 @@ import { PaymentsPage } from './pages/staff/PaymentsPage';
 import { NewOrderPage } from './pages/staff/NewOrderPage';
 import { CreateRestaurantPage } from './pages/owner/CreateRestaurantPage';
 import { RestaurantIntelligencePage } from './pages/owner/RestaurantIntelligencePage';
+import { GuestMenu } from './pages/customer/GuestMenu';
+import { LiveOrderTracker } from './pages/customer/LiveOrderTracker';
 import { Toaster } from './components/ui/sonner';
 
 const DashboardRedirect = () => {
@@ -54,6 +56,8 @@ export default function App() {
         <Route path="/" element={<LandingPage />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/menu/:restaurantId/:tableId" element={<GuestMenu />} />
+        <Route path="/order-status/:orderId" element={<LiveOrderTracker />} />
         
         <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN']} />}>
           <Route path="/analytics" element={<Layout><AnalyticsPage /></Layout>} />
@@ -74,7 +78,7 @@ export default function App() {
           <Route path="/owner/*" element={<Layout><OwnerDashboard /></Layout>} />
         </Route>
 
-        <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+        <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN']} />}>
           <Route path="/admin" element={<Layout><AdminDashboard /></Layout>} />
           <Route path="/admin/inventory" element={<Layout><InventoryPage /></Layout>} />
           <Route path="/admin/tables" element={<Layout><TablesPage /></Layout>} />
