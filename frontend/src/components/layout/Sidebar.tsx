@@ -87,11 +87,9 @@ export const Sidebar = () => {
         ServeX
         {isOwner && (
           <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="h-auto p-0 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-primary flex items-center justify-start gap-2">
+            <DropdownMenuTrigger className="h-auto p-0 text-[10px] uppercase tracking-widest font-bold text-muted-foreground hover:text-primary flex items-center justify-start gap-2 bg-transparent border-none outline-none cursor-pointer">
                 <Store className="w-3 h-3" />
                 {activeRestaurant?.name || activeRestaurantId || 'Select Venue'}
-              </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start" className="w-48 bg-card border-border">
               <DropdownMenuLabel className="text-[10px] uppercase font-bold text-muted-foreground">My Establishments</DropdownMenuLabel>

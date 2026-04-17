@@ -1,24 +1,31 @@
+import logging
 from functools import lru_cache
-from typing import Dict, List
+from typing import AsyncIterator, Dict, List
 
-from langchain_core.prompts import ChatPromptTemplate
+import ollama
 
-from app.ai.llm import get_llm
 from app.ai.retriever import retrieve_menu_items
+from app.core.config import get_settings
 from app.services.session_memory import get_session_memory
 
-_PROMPT = """You are ServeX AI waiter.
+logger = logging.getLogger(__name__)
+
+_SYSTEM_PROMPT = (
+    "You are ServeX AI waiter. "
+    "Be helpful, friendly and concise. "
+    "Only recommend items from the provided menu data."
+)
+
+_USER_TEMPLATE = """\
 Customer asked: {query}
 
-Only use this menu data:
+Menu items available:
 {retrieved_items}
 
 Conversation so far:
 {history}
 
-Give a helpful, friendly recommendation.
-Keep it short and conversational.
-"""
+Give a short, helpful recommendation."""
 
 
 def _format_items(items: List[Dict]) -> str:
@@ -40,21 +47,39 @@ def _format_items(items: List[Dict]) -> str:
 
 class RagPipeline:
     def __init__(self) -> None:
-        self._prompt = ChatPromptTemplate.from_template(_PROMPT)
-        self._llm = get_llm()
-        self._chain = self._prompt | self._llm
+        self._settings = get_settings()
+        self._client = ollama.AsyncClient(host=self._settings.ollama_base_url)
         self._memory = get_session_memory()
 
-    async def stream_response(self, query: str, session_id: str, restaurant_id: str):
+    async def stream_response(
+        self, query: str, session_id: str, restaurant_id: str
+    ) -> AsyncIterator[str]:
         items = await retrieve_menu_items(query, restaurant_id)
         retrieved_items = _format_items(items)
         history = await self._memory.get_history_text(session_id)
 
-        async for chunk in self._chain.astream(
-            {"query": query, "retrieved_items": retrieved_items, "history": history}
+        user_content = _USER_TEMPLATE.format(
+            query=query,
+            retrieved_items=retrieved_items,
+            history=history,
+        )
+
+        messages = [
+            {"role": "system", "content": _SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
+        ]
+
+        async for part in await self._client.chat(
+            model=self._settings.llm_model,
+            messages=messages,
+            stream=True,
+            think=False,
+            options={"temperature": self._settings.llm_temperature, "num_predict": self._settings.llm_num_predict},
         ):
-            if chunk.content:
-                yield chunk.content
+            text = part.message.content
+            logger.debug("Ollama chunk: %r", text)
+            if text:
+                yield text
 
 
 @lru_cache(maxsize=1)

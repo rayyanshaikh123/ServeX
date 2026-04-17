@@ -1,6 +1,6 @@
 from functools import lru_cache
 
-from langchain_community.chat_models import ChatOllama
+from langchain_ollama import ChatOllama
 
 from app.core.config import get_settings
 
@@ -13,5 +13,6 @@ def get_llm() -> ChatOllama:
         model=settings.llm_model,
         temperature=settings.llm_temperature,
         num_predict=settings.llm_num_predict,
-        timeout=settings.llm_timeout_s,
+        keep_alive="10m",
+        client_kwargs={"timeout": settings.llm_timeout_s},
     )

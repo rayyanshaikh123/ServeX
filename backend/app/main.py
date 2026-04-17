@@ -1,7 +1,7 @@
 import logging
 
 from fastapi import FastAPI
-
+from fastapi.middleware.cors import CORSMiddleware
 from app.core.config import get_settings
 from app.core.limiter import init_rate_limiter
 from app.db.indexes import ensure_indexes
@@ -21,9 +21,21 @@ from app.routes.users import router as users_router
 
 def create_app() -> FastAPI:
     settings = get_settings()
-    logging.basicConfig(level=logging.INFO)
+    logging.basicConfig(level=logging.DEBUG)
+    logging.getLogger('httpx').setLevel(logging.WARNING)
+    logging.getLogger('httpcore').setLevel(logging.WARNING)
+    logging.getLogger('sentence_transformers').setLevel(logging.WARNING)
+    logging.getLogger('huggingface_hub').setLevel(logging.WARNING)
 
     app = FastAPI(title=settings.app_name, version="1.0.0")
+
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173"],
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.include_router(auth_router)
     app.include_router(analytics_router)
     app.include_router(chat_router)

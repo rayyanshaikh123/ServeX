@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from 'react';
 import { MessageSquare, Send, X, Bot, User, Loader2 } from 'lucide-react';
-import { GoogleGenAI } from '@google/genai';
+import { API_BASE_URL } from '../../lib/api';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '../ui/card';
 import { ScrollArea } from '../ui/scroll-area';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
+import ReactMarkdown from 'react-markdown';
 
 interface Message {
   role: 'user' | 'assistant';
@@ -44,22 +45,47 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
     setIsLoading(true);
 
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY! });
-      const response = await ai.models.generateContent({
-        model: 'gemini-3.1-flash-lite-preview',
-        contents: [
-          { role: 'user', parts: [{ text: `You are ServeX AI assistant. The current user is ${user?.name} with the role of ${user?.role}. Assist them with restaurant management queries. Query: ${userMessage}` }] }
-        ],
-        config: {
-          systemInstruction: "You are a specialized AI for restaurant operations. Keep your responses concise, professional, and helpful for restaurant owners and admins."
-        }
+      const token = useAuthStore.getState().token;
+      const res = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({ query: userMessage, session_id: 'default-session' })
       });
 
-      const assistantMessage = response.text || "I'm sorry, I couldn't process that request.";
-      setMessages(prev => [...prev, { role: 'assistant', content: assistantMessage }]);
+      if (!res.ok) throw new Error('API request failed');
+
+      const reader = res.body?.getReader();
+      const decoder = new TextDecoder();
+      if (!reader) throw new Error('Stream failed');
+
+      setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+      let textBuffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        textBuffer += decoder.decode(value, { stream: true });
+
+        setMessages(prev => {
+          const newMsg = [...prev];
+          newMsg[newMsg.length - 1] = { ...newMsg[newMsg.length - 1], content: textBuffer };
+          return newMsg;
+        });
+      }
     } catch (error) {
-      console.error('Gemini Error:', error);
-      setMessages(prev => [...prev, { role: 'assistant', content: 'Connection to AI lost. Please check your API key.' }]);
+      console.error('Chat API Error:', error);
+      setMessages(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.role === 'assistant' && last.content === '') {
+          const newMsg = [...prev];
+          newMsg[newMsg.length - 1].content = 'Connection to AI lost. Please check your network or try again.';
+          return newMsg;
+        }
+        return [...prev, { role: 'assistant', content: 'Connection to AI lost. Please check your network or try again.' }];
+      });
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +93,7 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
 
   if (isWidget && !isOpen) {
     return (
-      <Button 
+      <Button
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-primary hover:bg-primary/90 shadow-2xl flex items-center justify-center p-0 z-50 transition-transform hover:scale-110 active:scale-95 border border-white/10"
       >
@@ -91,9 +117,9 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
           <span className="text-[11px] uppercase tracking-widest font-bold text-foreground">ServeX Assistant</span>
         </div>
         {isWidget && (
-          <Button 
-            variant="ghost" 
-            size="icon" 
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-8 w-8 text-muted-foreground hover:text-foreground"
             onClick={() => setIsOpen(false)}
           >
@@ -101,13 +127,13 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
           </Button>
         )}
       </div>
-      
+
       <CardContent className="flex-1 p-5 overflow-hidden bg-background">
         <ScrollArea className="h-full pr-4">
           <div className="space-y-5">
             {messages.map((m, i) => (
-              <div 
-                key={i} 
+              <div
+                key={i}
                 className={cn(
                   "flex gap-3",
                   m.role === 'user' ? "flex-row-reverse" : "flex-row"
@@ -115,11 +141,28 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
               >
                 <div className={cn(
                   "p-3 rounded-lg text-[13px] leading-relaxed max-w-[85%]",
-                  m.role === 'assistant' 
-                    ? "bg-muted/30 text-foreground border border-border/50 font-sans" 
+                  m.role === 'assistant'
+                    ? "bg-muted/30 text-foreground border border-border/50 font-sans"
                     : "bg-primary text-white font-medium"
                 )}>
-                  {m.content}
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      strong: ({ children }) => (
+                        <strong className={cn(
+                          "font-bold",
+                          m.role === 'assistant' ? "text-primary" : "text-white underline decoration-white/30"
+                        )}>
+                          {children}
+                        </strong>
+                      ),
+                      ul: ({ children }) => <ul className="list-disc ml-4 mb-2 space-y-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal ml-4 mb-2 space-y-1">{children}</ol>,
+                      li: ({ children }) => <li className="mb-0">{children}</li>
+                    }}
+                  >
+                    {m.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
@@ -137,12 +180,12 @@ export const AIChat = ({ variant = 'widget' }: AIChatProps) => {
       </CardContent>
 
       <CardFooter className="p-4 border-t border-border bg-card shrink-0">
-        <form 
+        <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
           className="flex w-full items-center gap-2"
         >
-          <Input 
-            placeholder="Ask ServeX anything..." 
+          <Input
+            placeholder="Ask ServeX anything..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
