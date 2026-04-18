@@ -1,13 +1,21 @@
 import { AIChat } from '../../components/chat/AIChat';
+import { Sparkles } from 'lucide-react';
 
 export const ChatPage = () => {
   return (
-    <div className="space-y-6 animate-in fade-in duration-500">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-sm font-medium uppercase tracking-[0.2em] text-muted-foreground">AI Assistant</h1>
-        <h2 className="text-2xl font-serif italic text-foreground tracking-tight">ServeX Chat</h2>
+    <div className="min-h-[90vh] flex flex-col items-center justify-center p-4 space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+      <div className="text-center space-y-3">
       </div>
-      <AIChat variant="page" />
+
+      <div className="w-full flex justify-center">
+        <AIChat variant="page" />
+      </div>
+
+      <div className="flex items-center gap-6 opacity-30">
+        <div className="h-[1px] w-12 bg-zinc-700" />
+        <span className="text-[10px] uppercase tracking-widest font-bold text-zinc-500">ServeX Intelligence Bureau</span>
+        <div className="h-[1px] w-12 bg-zinc-700" />
+      </div>
     </div>
   );
 };
