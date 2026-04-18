@@ -1,6 +1,8 @@
 from datetime import datetime
+from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel, Field
 
 from app.core.rbac import require_roles
 from app.core.roles import Role
@@ -12,6 +14,16 @@ from app.services.booking_service import cancel_booking, create_booking, list_bo
 from app.services.realtime import get_realtime_manager
 
 router = APIRouter(prefix="/api/bookings", tags=["bookings"])
+
+
+class PublicBookingCreateRequest(BaseModel):
+    """Guest-facing booking request — no auth required."""
+    table_id: Optional[str] = Field(None, description="Table ID from QR scan (optional)")
+    guest_name: str = Field(..., min_length=2, max_length=200)
+    party_size: int = Field(..., ge=1, le=1000)
+    start_time: datetime
+    duration_minutes: Optional[int] = Field(None, ge=15, le=720)
+    notes: Optional[str] = Field(None, max_length=500)
 
 
 def _booking_response(doc: dict) -> BookingResponse:
@@ -92,5 +104,33 @@ async def cancel_booking_endpoint(
     await manager.broadcast(
         current_user.restaurant_id,
         {"type": "booking.cancelled", "data": _booking_response(doc).model_dump()},
+    )
+    return _booking_response(doc)
+
+
+@router.post("/public/{restaurant_id}", response_model=BookingResponse)
+async def create_public_booking_endpoint(
+    restaurant_id: str,
+    payload: PublicBookingCreateRequest,
+) -> BookingResponse:
+    """Public endpoint for guests to create bookings without authentication."""
+    # Build a dict compatible with create_booking service
+    data = {
+        "table_id": payload.table_id or "walk-in",
+        "guest_name": payload.guest_name,
+        "party_size": payload.party_size,
+        "start_time": payload.start_time,
+        "duration_minutes": payload.duration_minutes or 90,
+        "notes": payload.notes,
+    }
+    try:
+        doc = await create_booking(restaurant_id, data, created_by="guest")
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+
+    manager = get_realtime_manager()
+    await manager.broadcast(
+        restaurant_id,
+        {"type": "booking.created", "data": _booking_response(doc).model_dump()},
     )
     return _booking_response(doc)
