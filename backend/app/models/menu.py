@@ -8,6 +8,9 @@ class MenuItem(BaseModel):
     id: Optional[str] = Field(default=None, alias="_id")
     restaurant_id: str
     name: str
+    category: str
+    description: Optional[str] = None
+    image_url: Optional[str] = None
     price: float
     isVeg: bool
     spiceLevel: str

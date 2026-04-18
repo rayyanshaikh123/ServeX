@@ -29,8 +29,15 @@ def _menu_response(doc: dict) -> MenuResponse:
 @router.get("/{restaurant_id}", response_model=MenuListResponse)
 async def get_restaurant_menu(restaurant_id: str):
     menu = get_menu_collection()
-    cursor = menu.find({"restaurant_id": restaurant_id})
-    items = await cursor.to_list(length=1000)
+    # Deduplicate by name at the DB level – keeps the first inserted doc per name
+    pipeline = [
+        {"$match": {"restaurant_id": restaurant_id}},
+        {"$sort": {"created_at": 1}},
+        {"$group": {"_id": "$name", "doc": {"$first": "$$ROOT"}}},
+        {"$replaceRoot": {"newRoot": "$doc"}},
+        {"$sort": {"created_at": 1}},
+    ]
+    items = await menu.aggregate(pipeline).to_list(length=1000)
     return MenuListResponse(
         items=[_menu_response(doc) for doc in items],
         total=len(items)

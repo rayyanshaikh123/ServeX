@@ -8,6 +8,10 @@ import { ScrollArea } from '../ui/scroll-area';
 import { useAuthStore } from '../../store/useAuthStore';
 import { cn } from '../../lib/utils';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import remarkBreaks from 'remark-breaks';
+import { useCartStore } from '../../store/useCartStore';
+import { toast } from 'sonner';
 
 interface MenuCard {
   id: string;
@@ -50,7 +54,7 @@ function getSpiceIcon(level: string) {
   return <Flame className="w-3 h-3 text-yellow-400" />;
 }
 
-function MenuItemCard({ item }: { item: MenuCard }) {
+function MenuItemCard({ item, onAdd }: { item: MenuCard, onAdd: (item: MenuCard) => void }) {
   return (
     <div className="rounded-2xl overflow-hidden border border-zinc-800/80 bg-zinc-900/40 backdrop-blur-sm shadow-xl group hover:border-primary/30 transition-all duration-300">
       <div className={cn(
@@ -87,6 +91,13 @@ function MenuItemCard({ item }: { item: MenuCard }) {
           ))}
         </div>
       </div>
+      <Button
+        onClick={() => onAdd(item)}
+        className="w-full mt-2 bg-primary hover:bg-primary/90 text-primary-foreground font-bold shadow-md hover:shadow-lg transition-transform hover:-translate-y-0.5 active:translate-y-0 text-sm py-2 rounded-xl"
+      >
+        <ShoppingCart className="w-4 h-4 mr-2" />
+        Add to Cart
+      </Button>
     </div>
   );
 }
@@ -112,7 +123,20 @@ export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) =
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const { user, activeRestaurantId } = useAuthStore();
+  const cart = useCartStore();
   const isPage = variant === 'page';
+
+  const handleAddToCart = (item: MenuCard) => {
+    cart.addItem({
+      ...item,
+      category: 'Recommended',
+      stock: 10,
+      low_stock_threshold: 5,
+      time_to_cook: 0,
+      restaurant_id: activeRestaurantId || guestRestaurantId || ''
+    } as any);
+    toast.success(`Added ${item.name} to cart`);
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -157,7 +181,11 @@ export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) =
         if (done) break;
         textBuffer += decoder.decode(value, { stream: true });
 
-        const { cleanText, menuItems } = parseMenuItems(textBuffer);
+        let { cleanText, menuItems } = parseMenuItems(textBuffer);
+
+        // Fix Qwen's tendency to escape bold tags and use spaces that trigger markdown code blocks
+        cleanText = cleanText.replace(/\\\*/g, '*').replace(/^[ \t]+/gm, '');
+
         setMessages(prev => {
           const newMsg = [...prev];
           newMsg[newMsg.length - 1] = {
@@ -266,8 +294,9 @@ export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) =
                       </div>
                     ) : (
                       <ReactMarkdown
+                        remarkPlugins={[remarkGfm, remarkBreaks]}
                         components={{
-                          p: ({ children }) => <p className="mb-3 last:mb-0">{children}</p>,
+                          p: ({ children }) => <p className="mb-3 last:mb-0 whitespace-pre-wrap">{children}</p>,
                           strong: ({ children }) => (
                             <strong className="font-bold text-primary tracking-tight">
                               {children}
@@ -288,7 +317,7 @@ export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) =
                 {m.menuItems && m.menuItems.length > 0 && (
                   <div className="grid grid-cols-1 gap-4 mt-2">
                     {m.menuItems.map((item, idx) => (
-                      <MenuItemCard key={idx} item={item} />
+                      <MenuItemCard key={idx} item={item} onAdd={handleAddToCart} />
                     ))}
                   </div>
                 )}

@@ -1,7 +1,8 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
 import { useRestaurantContext } from "../../hooks/useRestaurantContext";
 import { API_BASE_URL } from "../../lib/api";
+import { useVoiceRecognition } from "../../hooks/useVoiceRecognition";
 
 const CHIPS = ["Suggest something spicy", "Best dish under ₹300", "Any nut-free options?", "Wine pairing ideas"];
 
@@ -22,10 +23,34 @@ export default function AIPage() {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [inputVal, setInputVal] = useState("");
+  const [interimText, setInterimText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Unique session ID so the backend can maintain conversation memory
   const sessionId = useRef(`lume-${Date.now()}-${Math.random().toString(36).slice(2)}`);
+
+  // ── Voice recognition ───────────────────────────────────────────────────
+  const handleVoiceResult = useCallback((text: string) => {
+    if (text === "__unrecognized__") {
+      // No speech detected — just reset, same as listener.py WaitTimeoutError
+      return;
+    }
+    if (text.startsWith("__error__")) {
+      // API / hardware error
+      console.warn("Voice recognition error:", text);
+      return;
+    }
+    // Final text → populate input box so user can review / edit before sending
+    setInterimText("");
+    setInputVal(text);
+  }, []);
+
+  const handleInterim = useCallback((partial: string) => {
+    setInterimText(partial);
+  }, []);
+
+  const { status: voiceStatus, isListening, toggle: toggleVoice, isSupported: voiceSupported } =
+    useVoiceRecognition({ onResult: handleVoiceResult, onInterim: handleInterim });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -204,16 +229,56 @@ export default function AIPage() {
           <div className="flex items-center gap-3 mb-4">
             <div className="flex-1 relative">
               <input
-                value={inputVal}
-                onChange={(e) => setInputVal(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && sendMessage()}
-                placeholder="Ask LUME anything..."
+                value={isListening ? interimText : inputVal}
+                onChange={(e) => {
+                  if (!isListening) setInputVal(e.target.value);
+                }}
+                onKeyDown={(e) => e.key === "Enter" && !isListening && sendMessage()}
+                placeholder={isListening ? "Listening… speak now" : "Ask LUME anything..."}
                 disabled={isLoading}
-                className="w-full bg-[#0e0e0f] border border-[#3b494c]/30 rounded-2xl py-4 pl-5 pr-12 text-sm text-[#e5e2e3] focus:border-[#00e5ff]/50 outline-none transition-all placeholder:text-[#3b494c]/70 disabled:opacity-50"
+                readOnly={isListening}
+                className={`w-full bg-[#0e0e0f] border rounded-2xl py-4 pl-5 pr-12 text-sm outline-none transition-all disabled:opacity-50 ${
+                  isListening
+                    ? "border-[#00e5ff]/70 text-[#bac9cc]/60 placeholder:text-[#00e5ff]/50"
+                    : voiceStatus === "error"
+                    ? "border-red-500/50 text-[#e5e2e3] placeholder:text-[#3b494c]/70"
+                    : "border-[#3b494c]/30 text-[#e5e2e3] focus:border-[#00e5ff]/50 placeholder:text-[#3b494c]/70"
+                }`}
               />
-              <button className="absolute right-4 top-1/2 -translate-y-1/2 text-[#00e5ff] opacity-60 hover:opacity-100 transition-opacity">
-                <span className="material-symbols-outlined text-[20px]">mic</span>
-              </button>
+              {/* Mic toggle button */}
+              {voiceSupported && (
+                <button
+                  onClick={toggleVoice}
+                  disabled={isLoading}
+                  title={isListening ? "Stop listening" : "Speak to LUME"}
+                  className={`absolute right-4 top-1/2 -translate-y-1/2 transition-all ${
+                    isListening
+                      ? "text-[#00e5ff] opacity-100"
+                      : voiceStatus === "error"
+                      ? "text-red-400 opacity-80"
+                      : "text-[#00e5ff] opacity-60 hover:opacity-100"
+                  }`}
+                >
+                  {/* Pulsing ring when listening */}
+                  {isListening && (
+                    <span className="absolute inset-0 flex items-center justify-center">
+                      <span className="w-8 h-8 rounded-full border-2 border-[#00e5ff]/50 animate-ping absolute" />
+                    </span>
+                  )}
+                  <span className="material-symbols-outlined text-[20px] relative z-10">
+                    {isListening ? "mic" : voiceStatus === "error" ? "mic_off" : "mic"}
+                  </span>
+                </button>
+              )}
+              {/* Fallback static mic when unsupported */}
+              {!voiceSupported && (
+                <span
+                  title="Voice input not supported in this browser"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 material-symbols-outlined text-[20px] text-[#3b494c]/30 cursor-not-allowed"
+                >
+                  mic_off
+                </span>
+              )}
             </div>
             <button
               onClick={() => sendMessage()}
