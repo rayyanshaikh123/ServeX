@@ -30,7 +30,7 @@ const DashboardRedirect = () => {
   const { user } = useAuthStore();
   if (!user) return <Navigate to="/login" replace />;
   const role = user.role?.toUpperCase();
-  
+
   switch (role) {
     case 'OWNER': return <Navigate to="/owner" replace />;
     case 'ADMIN': return <Navigate to="/admin" replace />;
@@ -58,7 +58,7 @@ export default function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/menu/:restaurantId/:tableId" element={<GuestMenu />} />
         <Route path="/order-status/:orderId" element={<LiveOrderTracker />} />
-        
+
         <Route element={<ProtectedRoute allowedRoles={['OWNER', 'ADMIN']} />}>
           <Route path="/analytics" element={<Layout><AnalyticsPage /></Layout>} />
           <Route path="/revenue" element={<Layout><RevenuePage /></Layout>} />
@@ -90,8 +90,9 @@ export default function App() {
         </Route>
 
         <Route path="/app" element={<DashboardRedirect />} />
+        <Route path="/staff" element={<Navigate to="/admin" replace />} />
         <Route path="/unauthorized" element={<div className="h-screen flex items-center justify-center font-bold text-2xl">Unauthorized Access</div>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
+        <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
       <Toaster />
     </BrowserRouter>

@@ -1,4 +1,6 @@
 import logging
+
+logger = logging.getLogger(__name__)
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from app.core.rbac import require_roles
@@ -136,7 +138,7 @@ async def update_order_status_endpoint(
         {"type": "order.updated", "data": _order_response(doc).model_dump()},
     )
 
-    # Auto-generate invoice when order is served
+    # Auto-generate invoice when served; transition to paid to count revenue
     if payload.status == "served":
         try:
             invoice_doc = await create_or_get_invoice(current_user.restaurant_id, order_id)
@@ -146,6 +148,14 @@ async def update_order_status_endpoint(
             )
         except Exception as e:
             logger.error(f"Failed to auto-generate invoice for order {order_id}: {e}")
+
+    if payload.status == "paid":
+        # Broadcast revenue update so owner dashboard can refresh
+        await manager.broadcast(
+            current_user.restaurant_id,
+            {"type": "revenue.updated", "data": {"order_id": order_id, "total": doc.get("total", 0)}},
+        )
+        logger.info(f"Order {order_id} completed — revenue updated for {current_user.restaurant_id}")
 
     return _order_response(doc)
 

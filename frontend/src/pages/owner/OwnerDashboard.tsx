@@ -17,6 +17,9 @@ export const OwnerDashboard = () => {
   useEffect(() => {
     if (activeRestaurantId) {
       fetchData();
+      // Poll every 30s so active orders & revenue stay fresh
+      const interval = setInterval(fetchData, 30000);
+      return () => clearInterval(interval);
     }
   }, [activeRestaurantId]);
 
@@ -24,12 +27,10 @@ export const OwnerDashboard = () => {
     try {
       const { data } = await api.get('/api/analytics/summary');
       setStats(data);
-      // Transform hourly revenue for chart
       if (data.hourly_revenue) {
         const chartData = Object.entries(data.hourly_revenue).map(([hour, rev]) => ({
           name: `${hour}:00`,
           revenue: rev,
-          orders: 0 // Mocking orders count for now
         }));
         setRevenueData(chartData);
       }

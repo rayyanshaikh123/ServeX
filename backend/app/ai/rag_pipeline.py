@@ -38,7 +38,7 @@ def _format_items(items: List[Dict]) -> str:
         is_veg = "veg" if item.get("isVeg") else "non-veg"
         spice = item.get("spiceLevel", "unknown")
         tags = ", ".join(item.get("tags") or [])
-        line = f"- {name} | price: {price} | {is_veg} | spice: {spice}"
+        line = f"- {name} | price: ₹{price} | {is_veg} | spice: {spice}"
         if tags:
             line += f" | tags: {tags}"
         lines.append(line)

@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, CheckCircle2, ChefHat, Utensils, AlertCircle } from 'lucide-react';
+import { Clock, CheckCircle2, ChefHat, Utensils, AlertCircle, DollarSign } from 'lucide-react';
 import { Card } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
@@ -25,6 +25,8 @@ export const KDSGrid = ({ restaurantId }: { restaurantId: string }) => {
         toast.info(`New Order! Table ${data.table_id || 'N/A'}`);
       } else if (type === 'order.updated') {
         setOrders(prev => prev.map(o => o.id === data.id ? data : o));
+      } else if (type === 'revenue.updated') {
+        toast.success(`💰 Revenue updated: +₹${data.total?.toFixed(2) || '0.00'}`);
       }
     };
 
@@ -44,8 +46,12 @@ export const KDSGrid = ({ restaurantId }: { restaurantId: string }) => {
   const updateStatus = async (orderId: string, status: string) => {
     try {
       await api.post(`/api/orders/${orderId}/status`, { status });
-      toast.success(`Order marked as ${status}`);
-      fetchOrders(); // Refresh list
+      if (status === 'paid') {
+        toast.success(`✅ Order completed & added to revenue!`);
+      } else {
+        toast.success(`Order marked as ${status}`);
+      }
+      fetchOrders();
     } catch (e) {
       toast.error('Failed to update status');
     }
@@ -65,7 +71,7 @@ export const KDSGrid = ({ restaurantId }: { restaurantId: string }) => {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       <AnimatePresence mode="popLayout">
-        {orders.filter(o => o.status !== 'served' && o.status !== 'paid').map((order) => (
+        {orders.filter(o => o.status !== 'paid' && o.status !== 'closed').map((order) => (
           <motion.div
             key={order.id}
             layout
@@ -150,13 +156,32 @@ export const KDSGrid = ({ restaurantId }: { restaurantId: string }) => {
                       <Utensils className="w-3.5 h-3.5 mr-1.5" /> Mark Served
                     </Button>
                  )}
+                 {order.status === 'served' && (
+                    <Button 
+                      size="sm" 
+                      className="w-full col-span-2 bg-emerald-600 hover:bg-emerald-700 h-9 rounded-lg font-bold uppercase text-[10px]"
+                      onClick={() => updateStatus(order.id, 'paid')}
+                    >
+                      <DollarSign className="w-3.5 h-3.5 mr-1.5" /> Complete Order
+                    </Button>
+                 )}
               </div>
             </Card>
           </motion.div>
         ))}
       </AnimatePresence>
+      {orders.filter(o => o.status !== 'paid' && o.status !== 'closed').length === 0 && (
+        <div className="col-span-full flex flex-col items-center justify-center py-20 text-center">
+          <CheckCircle2 className="w-12 h-12 text-emerald-500/30 mb-4" />
+          <p className="text-zinc-500 font-bold uppercase text-[10px] tracking-widest">No Active Orders</p>
+          <p className="text-zinc-600 text-xs mt-1">All orders have been completed.</p>
+        </div>
+      )}
     </div>
   );
 };
 
 const cn = (...classes: any[]) => classes.filter(Boolean).join(' ');
+
+
+
