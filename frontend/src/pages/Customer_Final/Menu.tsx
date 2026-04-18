@@ -29,21 +29,23 @@ export const MenuPage = () => {
         const res = await fetch(`${API_BASE_URL}/api/menu/${restaurantId}`);
         if (!res.ok) throw new Error('Failed to fetch menu');
         const data = await res.json();
-        const items: MenuItem[] = data.items ?? [];
-
-        // ── Deduplicate by MongoDB _id (the true unique key) ──
-        const seen = new Set<string>();
-        const unique = items.filter((item) => {
-          if (seen.has(item.id)) return false;
-          seen.add(item.id);
-          return true;
+        const items = data.items ?? [];
+        
+        // ── Deduplicate by name ──
+        const uniqueItems: MenuItem[] = [];
+        const seenNames = new Set();
+        items.forEach((item: MenuItem) => {
+          if (!seenNames.has(item.name)) {
+            seenNames.add(item.name);
+            uniqueItems.push(item);
+          }
         });
 
-        setMenuItems(unique);
-        const cats = ['All', ...new Set<string>(unique.map((i) => i.category))];
+        setMenuItems(uniqueItems);
+        const cats = ['All', ...new Set<string>(uniqueItems.map((i: MenuItem) => i.category))];
         setCategories(cats);
       } catch {
-        toast.error('Failed to load menu.');
+        toast.error('Failed to load menu. Showing demo data.');
       } finally {
         setIsLoading(false);
       }
@@ -61,9 +63,9 @@ export const MenuPage = () => {
     return catMatch && textMatch;
   });
 
-  // Hero is the first filtered item; grid shows the rest (no duplication)
-  const heroItem = filtered[0] ?? null;
-  const gridItems = filtered.slice(1);
+  const heroItem = filteredItems()[0] ?? null;
+
+  function filteredItems() { return filtered; }
 
   const cartCount = cart.getTotalItems();
   const cartTotal = cart.getTotal().toFixed(2);
@@ -126,7 +128,7 @@ export const MenuPage = () => {
 
         {!isLoading && (
           <>
-            {/* ── Hero Card (first filtered item) ── */}
+            {/* ── Hero Card (first item) ── */}
             {heroItem && (
               <section className="mb-10 sm:mb-12">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5 sm:mb-6">
@@ -187,8 +189,8 @@ export const MenuPage = () => {
                     key={cat}
                     onClick={() => setSelectedCategory(cat)}
                     className={`px-4 sm:px-6 py-2 sm:py-2.5 rounded-full text-xs sm:text-sm font-bold flex items-center gap-1.5 whitespace-nowrap shrink-0 transition-all ${selectedCategory === cat
-                        ? 'bg-[#00e5ff] text-[#00363d]'
-                        : 'bg-[#2a2a2b] text-[#bac9cc] hover:bg-[#353436]'
+                      ? 'bg-[#00e5ff] text-[#00363d]'
+                      : 'bg-[#2a2a2b] text-[#bac9cc] hover:bg-[#353436]'
                       }`}
                   >
                     {cat === 'All' && selectedCategory === cat && (
@@ -211,7 +213,7 @@ export const MenuPage = () => {
               </div>
             </section>
 
-            {/* ── Dish Grid (excludes hero item) ── */}
+            {/* ── Dish Grid ── */}
             {filtered.length === 0 ? (
               <div className="text-center py-24 text-[#bac9cc]">
                 <span className="material-symbols-outlined text-5xl mb-4 block opacity-30">search_off</span>
@@ -220,7 +222,7 @@ export const MenuPage = () => {
               </div>
             ) : (
               <section className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-8">
-                {gridItems.map((item) => (
+                {filtered.slice(1).map((item) => (
                   <div key={item.id} className="bg-[#1c1b1c] rounded-2xl overflow-hidden group hover:shadow-[0_20px_50px_rgba(0,0,0,0.3)] transition-all duration-300">
                     <div className="relative h-48 sm:h-60 overflow-hidden">
                       {item.image_url ? (
