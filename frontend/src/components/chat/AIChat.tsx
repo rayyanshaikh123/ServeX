@@ -12,6 +12,8 @@ import remarkGfm from 'remark-gfm';
 import remarkBreaks from 'remark-breaks';
 import { useCartStore } from '../../store/useCartStore';
 import { toast } from 'sonner';
+import { useVoiceRecognition } from '../../hooks/useVoiceRecognition';
+import { useCallback } from 'react';
 
 interface MenuCard {
   id: string;
@@ -125,6 +127,25 @@ export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) =
   const { user, activeRestaurantId } = useAuthStore();
   const cart = useCartStore();
   const isPage = variant === 'page';
+  const [interimText, setInterimText] = useState("");
+
+  // ── Voice recognition ───────────────────────────────────────────────────
+  const handleVoiceResult = useCallback((text: string) => {
+    if (text === "__unrecognized__") return;
+    if (text.startsWith("__error__")) {
+      console.warn("Voice error:", text);
+      return;
+    }
+    setInterimText("");
+    setInput(text);
+  }, []);
+
+  const handleInterim = useCallback((partial: string) => {
+    setInterimText(partial);
+  }, []);
+
+  const { status: voiceStatus, isListening, toggle: toggleVoice, isSupported: voiceSupported } =
+    useVoiceRecognition({ onResult: handleVoiceResult, onInterim: handleInterim });
 
   const handleAddToCart = (item: MenuCard) => {
     cart.addItem({
@@ -346,23 +367,56 @@ export const AIChat = ({ variant = 'widget', guestRestaurantId }: AIChatProps) =
       <div className="px-6 py-6 border-t border-zinc-800/50 bg-zinc-950 shrink-0">
         <form
           onSubmit={(e) => { e.preventDefault(); handleSend(); }}
-          className="relative"
+          className="relative group/form"
         >
           <Input
-            placeholder="Ask anything about our menu..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
+            placeholder={isListening ? "Listening..." : "Ask anything about our menu..."}
+            value={isListening ? interimText : input}
+            onChange={(e) => {
+              if (!isListening) setInput(e.target.value);
+            }}
+            readOnly={isListening}
             disabled={isLoading}
-            className="w-full bg-zinc-900/80 border-zinc-800/80 h-14 pl-5 pr-14 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-primary/40 focus-visible:ring-offset-0 rounded-[20px] shadow-inner transition-all border-t border-white/5"
+            className={cn(
+              "w-full bg-zinc-900/80 border-zinc-800/80 h-14 pl-5 pr-24 text-sm text-zinc-100 placeholder:text-zinc-600 focus-visible:ring-primary/40 focus-visible:ring-offset-0 rounded-[20px] shadow-inner transition-all border-t border-white/5",
+              isListening && "border-primary/50 ring-1 ring-primary/20",
+              voiceStatus === 'error' && "border-red-500/50"
+            )}
           />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={isLoading || !input.trim()}
-            className="absolute right-2 top-2 bg-primary hover:bg-primary/90 h-10 w-10 shrink-0 rounded-2xl shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)] transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
-          >
-            <Send className="h-4.5 w-4.5" />
-          </Button>
+          <div className="absolute right-2 top-2 flex items-center gap-1.5">
+            {voiceSupported && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                onClick={toggleVoice}
+                disabled={isLoading}
+                className={cn(
+                  "h-10 w-10 rounded-2xl transition-all relative",
+                  isListening 
+                    ? "text-primary bg-primary/10" 
+                    : voiceStatus === 'error'
+                    ? "text-red-400 bg-red-400/10"
+                    : "text-zinc-500 hover:text-zinc-100 hover:bg-zinc-800"
+                )}
+              >
+                {isListening && (
+                  <span className="absolute inset-0 flex items-center justify-center">
+                    <span className="w-8 h-8 rounded-full border border-primary/40 animate-ping" />
+                  </span>
+                )}
+                {isListening ? <Sparkles className="w-4 h-4" /> : <MessageSquare className="w-4 h-4" />}
+              </Button>
+            )}
+            <Button
+              type="submit"
+              size="icon"
+              disabled={isLoading || !input.trim() || isListening}
+              className="bg-primary hover:bg-primary/90 h-10 w-10 shrink-0 rounded-2xl shadow-[0_0_15px_rgba(var(--primary-rgb),0.3)] transition-all hover:scale-105 active:scale-95 disabled:opacity-30 disabled:hover:scale-100"
+            >
+              <Send className="h-4.5 w-4.5" />
+            </Button>
+          </div>
         </form>
       </div>
 

@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
+import { useVoiceRecognition } from "../../hooks/useVoiceRecognition";
 import { Card, CardContent } from "../../components/ui/card";
 import { Sparkles, BrainCircuit, MessageSquare, Send, Database, BarChart3, Fingerprint, Zap } from "lucide-react";
 import { Button } from "../../components/ui/button";
@@ -27,7 +28,26 @@ export const RestaurantIntelligencePage = () => {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [interimText, setInterimText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // ── Voice recognition ───────────────────────────────────────────────────
+  const handleVoiceResult = useCallback((text: string) => {
+    if (text === "__unrecognized__") return;
+    if (text.startsWith("__error__")) {
+      console.warn("Voice error:", text);
+      return;
+    }
+    setInterimText("");
+    setInput(text);
+  }, []);
+
+  const handleInterim = useCallback((partial: string) => {
+    setInterimText(partial);
+  }, []);
+
+  const { status: voiceStatus, isListening, toggle: toggleVoice, isSupported: voiceSupported } =
+    useVoiceRecognition({ onResult: handleVoiceResult, onInterim: handleInterim });
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -134,7 +154,7 @@ export const RestaurantIntelligencePage = () => {
                       )}>
                          <div className={cn(
                            "w-10 h-10 rounded-full flex items-center justify-center shrink-0 border border-border mt-1",
-                           msg.role === ' ai' ? "bg-primary/10 text-primary" : "bg-muted/30 text-muted-foreground"
+                           msg.role === 'ai' ? "bg-primary/10 text-primary" : "bg-muted/30 text-muted-foreground"
                          )}>
                            {msg.role === 'ai' ? <Sparkles className="w-5 h-5" /> : <MessageSquare className="w-5 h-5" />}
                          </div>
@@ -158,22 +178,53 @@ export const RestaurantIntelligencePage = () => {
               </ScrollArea>
 
               <div className="p-8 border-t border-border bg-muted/10">
-                 <div className="relative group">
+                  <div className="relative group">
                     <Input 
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && generateResponse()}
-                      placeholder="Consult the strategy engine regarding operational data..." 
-                      className="bg-card border-border h-14 pl-6 pr-14 text-sm focus-visible:ring-primary shadow-inner"
-                    />
-                    <button 
-                      onClick={generateResponse}
+                      value={isListening ? interimText : input}
+                      onChange={(e) => {
+                        if (!isListening) setInput(e.target.value);
+                      }}
+                      onKeyDown={(e) => e.key === 'Enter' && !isListening && generateResponse()}
+                      placeholder={isListening ? "Listening..." : "Consult the strategy engine regarding operational data..."} 
+                      readOnly={isListening}
                       disabled={isLoading}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all opacity-80 group-hover:opacity-100 disabled:opacity-50"
-                    >
-                       <Send className="w-4 h-4" />
-                    </button>
-                 </div>
+                      className={cn(
+                        "bg-card border-border h-14 pl-6 pr-24 text-sm focus-visible:ring-primary shadow-inner transition-all",
+                        isListening && "border-primary/50 ring-1 ring-primary/20",
+                        voiceStatus === 'error' && "border-red-500/50"
+                      )}
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-2">
+                       {voiceSupported && (
+                         <button
+                           onClick={toggleVoice}
+                           disabled={isLoading}
+                           className={cn(
+                             "p-2 rounded-lg transition-all relative overflow-hidden",
+                             isListening 
+                               ? "text-primary bg-primary/10" 
+                               : voiceStatus === 'error'
+                               ? "text-red-400 bg-red-400/10"
+                               : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                           )}
+                         >
+                            {isListening && (
+                              <span className="absolute inset-0 flex items-center justify-center">
+                                <span className="w-8 h-8 rounded-full border border-primary/40 animate-ping" />
+                              </span>
+                            )}
+                            <Sparkles className="w-4 h-4" />
+                         </button>
+                       )}
+                       <button 
+                         onClick={() => !isListening && generateResponse()}
+                         disabled={isLoading || !input.trim() || isListening}
+                         className="p-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-all opacity-80 group-hover:opacity-100 disabled:opacity-50"
+                       >
+                          <Send className="w-4 h-4" />
+                       </button>
+                    </div>
+                  </div>
                  <div className="flex items-center justify-center gap-6 mt-4">
                     <span className="text-[10px] text-muted-foreground italic tracking-widest">Model: Gemini Strategy Node</span>
                     <span className="text-[10px] text-muted-foreground italic tracking-widest">Context Window: Node-001 Ledger</span>
